@@ -44,9 +44,9 @@ import { ContratosModule } from './contratos/contratos.module';
         synchronize: true,
         connectTimeout: 40000,
         autoLoadEntities: true,
-        // ssl: {
-        //   rejectUnauthorized: true
-        // },
+        ssl: {
+          rejectUnauthorized: false
+        },
       }),
       inject: [ConfigService],
     }),
