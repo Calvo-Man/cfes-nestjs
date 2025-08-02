@@ -5,6 +5,3 @@
 Dockerfile
 fly.toml
 # Ignora todo menos los dos archivos necesarios
-*.json
-!speech-credentials.json
-!text-to-voice.json
