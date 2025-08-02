@@ -4,13 +4,13 @@ import { MessageMedia } from 'whatsapp-web.js';
 import { createReadStream } from 'fs';
 import * as qrcode from 'qrcode-terminal';
 import { Server } from 'socket.io';
-import { ManejoDeMensajesService } from 'src/manejo-de-mensajes/manejo-de-mensajes.service';
 import { Interval } from '@nestjs/schedule';
 import * as fs from 'fs-extra';
 
 import { ChatGptRespuestasService } from './chat-gpt/respuesta-mensajes.service';
 import { writeFile } from 'fs';
 import { TranscripcionService } from './voice-to-text.service';
+import { ManejoDeMensajesService } from 'src/manejo-de-mensajes/manejo-de-mensajes.service';
 @Injectable()
 export class WhatsappBotService implements OnModuleInit {
   private client: Client;
@@ -53,7 +53,7 @@ export class WhatsappBotService implements OnModuleInit {
     this.client = new Client({
       authStrategy: new LocalAuth({
         clientId: 'cfe-bot',
-        dataPath: '/data/session-cfe', // ✅ Ahora en volumen persistente
+        dataPath: './auth/session-cfe',
       }),
 
       puppeteer: {
@@ -248,7 +248,7 @@ export class WhatsappBotService implements OnModuleInit {
   }
 
   // 📦 Enviar mensajes pendientes cada 60 segundos
-  @Interval(60000)
+  //@Interval(60000)
   async enviarMensajesPendientes() {
     if (this.enviandoMensajes) {
       this.logger.warn(

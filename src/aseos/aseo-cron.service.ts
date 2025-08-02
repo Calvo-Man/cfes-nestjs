@@ -23,7 +23,7 @@ export class AseoCronService {
 
   //Cron cada segundo
   
-@Cron('* * * * *')
+//@Cron('* * * * *')
   async generarHorarioMensualDeAseo() {
     this.logger.log('🧹 Generando horario de aseo mensual...');
     const inicioMesProximo = dayjs().add(1, 'month').startOf('month');

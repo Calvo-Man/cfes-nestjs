@@ -30,7 +30,7 @@ export class AsistenciasNotificacionService {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
- @Cron('* * * * *') // Ejemplo: todos los días a las 8 am
+ //@Cron('* * * * *') // Ejemplo: todos los días a las 8 am
   async notificarEncargadosConUsuariosCercanos() {
      const usuarios = await this.usuarioRepository.find({
       where: { direccion: Not(IsNull()), mensaje_enviado: false },
