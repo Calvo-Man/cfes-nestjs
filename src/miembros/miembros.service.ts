@@ -1,8 +1,6 @@
 import {
   BadRequestException,
   Injectable,
-  InternalServerErrorException,
-  NotFoundException,
 } from '@nestjs/common';
 import { CreateMiembroDto } from './dto/create-miembro.dto';
 import { UpdateMiembroDto } from './dto/update-miembro.dto';
@@ -10,14 +8,10 @@ import { Between, In, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Miembro } from './entities/miembro.entity';
 import * as bcrypt from 'bcrypt';
-import { Rol } from 'src/roles/enum/roles.enum';
 import { Horario } from './enum/horario.enum';
 import { Aseo } from 'src/aseos/entities/aseo.entity';
-import { WhatsappBotService } from 'src/whatsapp-bot/whatsapp-bot.service';
 import { ManejoDeMensajesService } from 'src/manejo-de-mensajes/manejo-de-mensajes.service';
-import { Cargo } from './enum/cargo.enum';
 import { ContratosService } from 'src/contratos/contratos.service';
-import { Modo } from './enum/modo.enum';
 @Injectable()
 export class MiembrosService {
   constructor(
@@ -233,7 +227,6 @@ A partir de ahora recibirás por este medio notificaciones importantes como asig
         miembro: { id: miembroId },
         fecha: Between(inicioMes, finMes),
       },
-      relations: ['miembro'], // opcional, si quieres info del miembro
     });
 
     if (!aseos.length) {
@@ -242,8 +235,11 @@ A partir de ahora recibirás por este medio notificaciones importantes como asig
         message: 'No se encontraron aseos asignados en el mes actual',
       };
     }
-
-    return aseos;
+    console.log(aseos);
+    return aseos.map((aseo) => ({
+      id: aseo.id,
+      fecha: aseo.fecha,
+    }));
   }
   async findOneByTelefono(telefono: string) {
     if (!telefono.startsWith('57')) {

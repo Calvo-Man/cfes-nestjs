@@ -1,18 +1,20 @@
 # syntax = docker/dockerfile:1
 
-# 🔹 Etapa base
 ARG NODE_VERSION=20.18.0
 FROM node:${NODE_VERSION}-slim AS base
 
 LABEL fly_launch_runtime="NestJS"
 WORKDIR /app
-ENV NODE_ENV="production"
 
-# 🔹 Instala dependencias del sistema necesarias para Puppeteer/Chromium
+# ✅ Variables de entorno clave
+ENV NODE_ENV=production \
+    PUPPETEER_SKIP_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
+# ✅ Instala Chromium desde APT (más ligero y sin descargar manualmente)
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y \
-      wget \
-      ca-certificates \
+      chromium-browser \
       fonts-liberation \
       libappindicator3-1 \
       libasound2 \
@@ -27,16 +29,16 @@ RUN apt-get update -qq && \
       libxcomposite1 \
       libxdamage1 \
       libxrandr2 \
-      xdg-utils \
       libgbm-dev \
       libgtk-3-0 \
       libxshmfence-dev \
       libxss1 \
       libgconf-2-4 \
-      chromium \
-    --no-install-recommends && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+      xdg-utils \
+      wget \
+      ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # 🔹 Etapa de build
 FROM base AS build
@@ -46,35 +48,27 @@ RUN apt-get update -qq && \
       build-essential \
       node-gyp \
       pkg-config \
-      python-is-python3 && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+      python-is-python3 \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
 RUN npm ci --include=dev
 
-# Copia el código fuente y credenciales
 COPY . .
-# (si speech-credentials.json y text-to-voice.json están en .dockerignore,
-#  las puedes copiar explícitamente así:)
-COPY speech-credentials.json ./speech-credentials.json
-COPY text-to-voice.json ./text-to-voice.json
+COPY speech-credentials.json .
+COPY text-to-voice.json .
 
 RUN npm run build
 
-# 🔹 Etapa final (ejecución)
+# 🔹 Etapa final
 FROM base
 
-# Copia la app compilada y dependencias
 COPY --from=build /app/dist /app/dist
 COPY --from=build /app/node_modules /app/node_modules
 COPY --from=build /app/package.json /app/package.json
 
-# Copia también las credenciales necesarias
 COPY --from=build /app/speech-credentials.json /app/speech-credentials.json
 COPY --from=build /app/text-to-voice.json /app/text-to-voice.json
 
-# Exponer el puerto de la app
 EXPOSE 3000
-
 CMD ["node", "dist/main.js"]
