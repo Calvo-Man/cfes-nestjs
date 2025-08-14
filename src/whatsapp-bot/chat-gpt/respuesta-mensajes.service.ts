@@ -11,6 +11,7 @@ import { TeologiaService } from './services/teologia.service';
 import { Horario } from 'src/miembros/enum/horario.enum';
 import { ManejoDeMensajesService } from 'src/manejo-de-mensajes/manejo-de-mensajes.service';
 import { Cron, CronExpression, Interval } from '@nestjs/schedule';
+import TriviaTemas from './services/triviaTemas';
 
 @Injectable()
 export class ChatGptRespuestasService {
@@ -281,15 +282,14 @@ export class ChatGptRespuestasService {
     }
   }
 
- 
-  @Interval(60000) // Cada 1 minuto
+ // @Cron('*/5 * * * *') // Cada 5 minuto
   private async generarTrivia() {
     console.log('Generando trivia...' + new Date().toLocaleString());
     const miembrosHoy = new Date().getDate();
     const miembros = await this.miembrosService.findAll();
     if (!miembros || miembros.miembros.length === 0) return;
     console.log('Miembros encontrados: ', miembros.miembros);
-
+    const temaElegido = TriviaTemas.escogerTemaAleatorio('miembro');
     let i = 0;
     for (const miembro of miembros.miembros) {
       const key = `${miembro.telefono}_${miembrosHoy}`;
@@ -300,35 +300,37 @@ export class ChatGptRespuestasService {
         );
         continue;
       }
-      this.enviadosHoy.add(key);
-      console.log('Mensajes enviados: ', (i = ++i));
-      // Marca como enviado
-      if (!this.historiales[miembro.telefono]) {
-        this.historiales[miembro.telefono] = [
-          {
-            role: 'system',
-            content: systemPromptFunction(
-              new Date(),
-              miembro.telefono,
-              'texto',
-            ),
-          },
-        ];
-      }
-      const mensaje = `¡Hola, ${miembro.name}! 🙌 Hoy quiero retarte con unas preguntitas bíblica que te hará pensar y fortalecer tu fe.
+      if (miembro.telefono === '573024064896' || miembro.telefono === '573015113361') {
+        this.enviadosHoy.add(key);
+        console.log('Mensajes enviados: ', (i = ++i));
+        // Marca como enviado
+        if (!this.historiales[miembro.telefono]) {
+          this.historiales[miembro.telefono] = [
+            {
+              role: 'system',
+              content: systemPromptFunction(
+                new Date(),
+                miembro.telefono,
+                'texto',
+              ),
+            },
+          ];
+        }
+        const mensaje = `¡Hola, ${miembro.name}! 🙌 Hoy quiero retarte con unas preguntitas bíblica sobre ${temaElegido.nombre} que te harán pensar.
+Descipcion del tema: ${temaElegido.descripcion}      
 ¿Listo para responder la trivia del día?
 📖✨ ¡Vamos a aprender juntos del gran amor de Dios!  `;
-      this.historiales[miembro.telefono].push({
-        role: 'assistant',
-        content: mensaje,
-      });
+        this.historiales[miembro.telefono].push({
+          role: 'assistant',
+          content: mensaje,
+        });
 
-      await this.manejoDeMensajesService.guardarMensaje(
-        miembro.telefono,
-        mensaje,
-        'texto',
-      );
-
+        await this.manejoDeMensajesService.guardarMensaje(
+          miembro.telefono,
+          mensaje,
+          'texto',
+        );
+      }
       console.log(`✅ Trivia enviada a ${miembro.name} (${miembro.telefono})`);
     }
   }

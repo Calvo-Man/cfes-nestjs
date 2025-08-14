@@ -12,7 +12,6 @@ import { writeFile } from 'fs';
 import { TranscripcionService } from './voice-to-text.service';
 import { ManejoDeMensajesService } from 'src/manejo-de-mensajes/manejo-de-mensajes.service';
 import { MiembrosService } from 'src/miembros/miembros.service';
-import e from 'express';
 @Injectable()
 export class WhatsappBotService implements OnModuleInit {
   private client: Client;

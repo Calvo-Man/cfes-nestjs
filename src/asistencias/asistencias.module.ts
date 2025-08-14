@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { AsistenciasService } from './asistencias.service';
 import { AsistenciasController } from './asistencias.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -15,7 +15,7 @@ import { ManejoDeMensajesModule } from 'src/manejo-de-mensajes/manejo-de-mensaje
 @Module({
   imports: [
     TypeOrmModule.forFeature([Asistencia, CasasDeFe]),
-    ManejoDeMensajesModule,
+    forwardRef(() => ManejoDeMensajesModule),
   ],
   controllers: [AsistenciasController],
   providers: [
