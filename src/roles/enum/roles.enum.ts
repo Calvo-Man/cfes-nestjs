@@ -1,5 +1,6 @@
 export enum Rol {
   PASTOR = 'pastor',
-  SERVIDOR = 'servidor',
+  ADMINISTRADOR = 'administrador',
   LIDER = 'lider',
+  SERVIDOR = 'servidor',
 }

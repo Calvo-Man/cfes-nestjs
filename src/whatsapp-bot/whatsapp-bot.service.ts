@@ -11,6 +11,8 @@ import { ChatGptRespuestasService } from './chat-gpt/respuesta-mensajes.service'
 import { writeFile } from 'fs';
 import { TranscripcionService } from './voice-to-text.service';
 import { ManejoDeMensajesService } from 'src/manejo-de-mensajes/manejo-de-mensajes.service';
+import { MiembrosService } from 'src/miembros/miembros.service';
+import e from 'express';
 @Injectable()
 export class WhatsappBotService implements OnModuleInit {
   private client: Client;
@@ -21,9 +23,10 @@ export class WhatsappBotService implements OnModuleInit {
   private botReadyResolve: () => void;
 
   constructor(
-    private readonly manejoDeMensajesService: ManejoDeMensajesService,
+    public readonly manejoDeMensajesService: ManejoDeMensajesService,
     private readonly respuestaMensajesService: ChatGptRespuestasService,
     private readonly transcripcionService: TranscripcionService,
+    private readonly miembrosService: MiembrosService,
   ) {}
 
   onModuleInit() {
@@ -109,33 +112,26 @@ export class WhatsappBotService implements OnModuleInit {
         console.log('⛔ Mensaje de status ignorado.');
         return;
       }
-
+      const modoRespuesta =
+        await this.miembrosService.obtenerModoRespuesta(telefono);
       this.client.setStatus('online');
       this.client.setStatus('Comunicando con CFE...');
       if (message.type === 'ptt') {
         console.log('🎙️ Nuevo audio de voz de:', telefono);
         const chat = await message.getChat();
-        const media = await message.downloadMedia();
         await chat.sendSeen();
-
-        await chat.sendStateTyping();
-        console.log('✅ Audio descargado.:', media);
+        if (modoRespuesta === 'texto') {
+          await chat.sendStateTyping();
+        } else {
+          await chat.sendStateRecording();
+        }
+        const media = await message.downloadMedia();
         if (!media) return;
 
         const buffer = Buffer.from(media.data, 'base64');
         console.log('Tamaño del buffer:', buffer.length);
 
         console.log('✅ Audio convertido a buffer.');
-        // Opcional: guarda el audio para pruebas
-        // const fileName = `./uploads/audios/audio_${Date.now()}.ogg`;
-        // writeFile(fileName, buffer, 'base64', (err) => {
-        //   if (err) {
-        //     console.error('❌ Error al guardar el audio:', err.message);
-        //   } else {
-        //     console.log(`✅ Audio guardado como ${fileName}.`);
-        //   }
-        // });
-        // Transcribe
 
         const transcripcion =
           await this.transcripcionService.transcribirDesdeBuffer(buffer);
@@ -154,7 +150,6 @@ export class WhatsappBotService implements OnModuleInit {
         );
 
         if (respuesta.audioPath) {
-          await chat.sendStateRecording();
           console.log('Respuesta con audio: ', respuesta);
           await this.enviarAudioComoRespuesta(telefono, respuesta.audioPath);
           return;
@@ -167,21 +162,21 @@ export class WhatsappBotService implements OnModuleInit {
         console.log('📧 Nuevo mensaje de texto:', telefono, texto);
         const chat = await message.getChat();
         await chat.sendSeen();
-        await this.delay(1000);
-        await chat.sendStateTyping();
+        if (modoRespuesta === 'texto') {
+          await chat.sendStateTyping();
+        } else {
+          await chat.sendStateRecording();
+        }
 
         const respuesta = await this.respuestaMensajesService.responderPregunta(
           texto,
           telefono,
         );
-        console.log('Respuesta: ', respuesta);
         if (respuesta.audioPath) {
-          await chat.sendStateRecording();
           console.log('Respuesta con audio: ', respuesta);
           await this.enviarAudioComoRespuesta(telefono, respuesta.audioPath);
           return;
         }
-        console.log('Respuesta sin audio: ', respuesta);
         await this.enviarMensaje(message.from, respuesta.text);
         await chat.clearState();
       }
@@ -247,8 +242,7 @@ export class WhatsappBotService implements OnModuleInit {
     }
   }
 
-  // 📦 Enviar mensajes pendientes cada 60 segundos
-  //@Interval(60000)
+  @Interval(60000)
   async enviarMensajesPendientes() {
     if (this.enviandoMensajes) {
       this.logger.warn(
@@ -265,28 +259,53 @@ export class WhatsappBotService implements OnModuleInit {
 
       if (!mensajes.length) {
         this.logger.debug('🕐 No hay mensajes pendientes');
-        return;
-      }
+      } else {
+        this.logger.debug(`🕐 ${mensajes.length} mensajes pendientes`);
 
-      this.logger.debug(`🕐 ${mensajes.length} mensajes pendientes`);
+        for (const mensaje of mensajes) {
+          if (mensaje.enviado) continue;
+          await this.delayRandom();
 
-      for (const mensaje of mensajes) {
-        if (mensaje.enviado) continue;
-        await this.delayRandom();
-        try {
-          await this.enviarMensaje(mensaje.telefono, mensaje.contenido);
-          await this.manejoDeMensajesService.marcarComoEnviado(mensaje.id);
-          this.logger.debug(`✅ Mensaje enviado a ${mensaje.telefono}`);
-        } catch (err) {
-          this.logger.error(`❌ Error con ${mensaje.telefono}: ${err.message}`);
+          try {
+            if (mensaje.enviar_por === 'IA') {
+              const telefonoNumerico = mensaje.telefono.replace(/\D/g, '');
+              const telefonoSinPrefijo = telefonoNumerico.startsWith('57')
+                ? telefonoNumerico.slice(2)
+                : telefonoNumerico;
+
+              const respuesta =
+                await this.respuestaMensajesService.responderPregunta(
+                  mensaje.contenido,
+                  telefonoSinPrefijo,
+                );
+
+              this.logger.debug(
+                `📧 Enviando a ${mensaje.telefono}: ${mensaje.contenido}`,
+              );
+              this.logger.debug('📩 Respuesta generada:', respuesta);
+              await this.enviarMensaje(mensaje.telefono, respuesta.text);
+            } else {
+              this.logger.debug(
+                `📧 Enviando a ${mensaje.telefono}: ${mensaje.contenido}`,
+              );
+              await this.enviarMensaje(mensaje.telefono, mensaje.contenido);
+            }
+
+            await this.manejoDeMensajesService.marcarComoEnviado(mensaje.id);
+            this.logger.debug(`✅ Mensaje enviado a ${mensaje.telefono}`);
+          } catch (err) {
+            this.logger.error(
+              `❌ Error con ${mensaje.telefono}: ${err.message}`,
+            );
+          }
+
+          await this.delayRandom();
         }
-
-        await this.delayRandom(); // para evitar bloqueo por spam
       }
     } catch (err) {
       this.logger.error('❌ Error en enviarMensajesPendientes:', err.message);
     } finally {
-      this.enviandoMensajes = false; // Liberar el flag siempre
+      this.enviandoMensajes = false; // Liberar siempre
     }
   }
 }

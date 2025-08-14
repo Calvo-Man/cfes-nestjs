@@ -12,7 +12,7 @@ export class EventosController {
   constructor(private readonly eventosService: EventosService) {}
 
   @Post()
-  @Roles(Rol.PASTOR)
+  @Roles(Rol.PASTOR, Rol.ADMINISTRADOR, Rol.LIDER)
   create(@Body() createEventoDto: CreateEventoDto) {
     return this.eventosService.create(createEventoDto);
   }
@@ -33,6 +33,7 @@ export class EventosController {
   }
 
   @Patch(':id')
+  @Roles(Rol.PASTOR, Rol.ADMINISTRADOR, Rol.LIDER)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateEventoDto: UpdateEventoDto,
@@ -41,6 +42,7 @@ export class EventosController {
   }
 
   @Delete(':id')
+  @Roles(Rol.PASTOR, Rol.ADMINISTRADOR, Rol.LIDER)
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.eventosService.remove(id);
   }

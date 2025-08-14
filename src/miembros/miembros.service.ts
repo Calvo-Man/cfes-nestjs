@@ -1,10 +1,7 @@
-import {
-  BadRequestException,
-  Injectable,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateMiembroDto } from './dto/create-miembro.dto';
 import { UpdateMiembroDto } from './dto/update-miembro.dto';
-import { Between, In, Repository } from 'typeorm';
+import { Between, In, IsNull, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Miembro } from './entities/miembro.entity';
 import * as bcrypt from 'bcrypt';
@@ -12,6 +9,8 @@ import { Horario } from './enum/horario.enum';
 import { Aseo } from 'src/aseos/entities/aseo.entity';
 import { ManejoDeMensajesService } from 'src/manejo-de-mensajes/manejo-de-mensajes.service';
 import { ContratosService } from 'src/contratos/contratos.service';
+import { Cron } from '@nestjs/schedule';
+
 @Injectable()
 export class MiembrosService {
   constructor(
@@ -56,6 +55,7 @@ export class MiembrosService {
       user: createMiembroDto.user,
       password: hashedPassword,
       telefono: numero, // teléfono ya validado
+      cedula: createMiembroDto.cedula,
       rol: createMiembroDto.rol,
       cargo: createMiembroDto.cargo,
       horario_aseo: createMiembroDto.horario_aseo,
@@ -90,7 +90,16 @@ A partir de ahora recibirás por este medio notificaciones importantes como asig
 > CENTRO DE FE Y ESPERANZA SAN PELAYO`;
 
     try {
-      await this.manejoDeMensajesService.guardarMensaje(chatId, mensaje);
+      await this.manejoDeMensajesService.guardarMensaje(
+        chatId,
+        mensaje,
+        'Sistema',
+      );
+      await this.manejoDeMensajesService.guardarMensaje(
+        chatId,
+        '¿Cuáles son tus capacidades?',
+        'IA',
+      );
     } catch (error) {
       throw new BadRequestException(
         'No se pudo enviar el mensaje. Asegúrate de que el número haya agregado al bot y haya enviado un "Hola" primero.',
@@ -114,7 +123,7 @@ A partir de ahora recibirás por este medio notificaciones importantes como asig
     console.log(miembro);
 
     if (!miembro) {
-      return { message: 'Miembro no encontrado.' };
+      return 'Miembro no encontrado.';
     }
     try {
       miembro.modo_respuesta = modo;
@@ -173,7 +182,7 @@ A partir de ahora recibirás por este medio notificaciones importantes como asig
   }
   async findAllMembers() {
     const miembros = await this.miembroRepository.find({
-      where: { activo: true },
+      where: { activo: true ,disponibilidad_aseo: true},
     });
     if (!miembros) {
       throw new BadRequestException('Miembros no encontrados');
@@ -192,6 +201,7 @@ A partir de ahora recibirás por este medio notificaciones importantes como asig
         name: miembro.name,
         apellido: miembro.apellido,
         telefono: miembro.telefono,
+        cedula: miembro.cedula,
         rol: miembro.rol,
         cargo: miembro.cargo,
         activo: miembro.activo,
@@ -339,8 +349,8 @@ A partir de ahora recibirás por este medio notificaciones importantes como asig
       throw new BadRequestException('Error al eliminar miembro', error.message);
     }
   }
-
-  async softDelete(id: number) {
+  
+  async cambiarDisponibilidadAseo(id: number) {
     const findMiembro = await this.miembroRepository.findOne({ where: { id } });
 
     if (!findMiembro) {
@@ -348,18 +358,64 @@ A partir de ahora recibirás por este medio notificaciones importantes como asig
     }
 
     try {
-      findMiembro.activo = false;
+      findMiembro.disponibilidad_aseo = !findMiembro.disponibilidad_aseo;
       await this.miembroRepository.save(findMiembro);
 
       return {
-        message: 'Miembro desactivado con éxito',
+        message: `Disponibilidad de aseo cambiada a ${
+          findMiembro.disponibilidad_aseo ? 'disponible' : 'no disponible'
+        }`,
+        color: findMiembro.disponibilidad_aseo ? 'success' : 'error',
         status: 200,
       };
     } catch (error) {
-      throw new BadRequestException({
-        message: 'Error al desactivar miembro',
-        error: error.message,
-      });
+      throw new BadRequestException(
+        'Error al cambiar disponibilidad de aseo',
+        error.message,
+      );
+    }
+  }
+
+  async cambiarEstadoDeMiembro(id: number) {
+    const findMiembro = await this.miembroRepository.findOne({ where: { id } });
+
+    if (!findMiembro) {
+      throw new BadRequestException('Miembro no encontrado');
+    }
+
+    if (findMiembro.activo) {
+      try {
+        findMiembro.activo = false;
+        await this.miembroRepository.save(findMiembro);
+
+        return {
+          message: 'Miembro desactivado con éxito',
+          color: 'error',
+
+          status: 200,
+        };
+      } catch (error) {
+        throw new BadRequestException({
+          message: 'Error al desactivar miembro',
+          error: error.message,
+        });
+      }
+    } else {
+      try {
+        findMiembro.activo = true;
+        await this.miembroRepository.save(findMiembro);
+
+        return {
+          message: 'Miembro activado con éxito',
+          color: 'success',
+          status: 200,
+        };
+      } catch (error) {
+        throw new BadRequestException({
+          message: 'Error al activar miembro',
+          error: error.message,
+        });
+      }
     }
   }
 }

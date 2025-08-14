@@ -10,7 +10,7 @@ export class TTSService {
     nombreArchivo: string,
   ): Promise<string> {
     const textToSpeech = require('@google-cloud/text-to-speech');
-    
+
     const client = new textToSpeech.TextToSpeechClient({
       keyFilename: process.env.TEXT_TO_SPEECH,
     });
@@ -26,8 +26,13 @@ export class TTSService {
         text: texto,
       },
       voice: {
-        languageCode: 'es-ES',
-        name: 'es-ES-Chirp3-HD-Algieba',
+        // languageCode: 'es-ES',
+        // name: 'es-ES-Chirp3-HD-Algieba',
+        languageCode: 'es-US',
+        name: 'es-US-Chirp3-HD-Laomedeia',
+        // name: 'es-US-Chirp3-HD-Algenib',
+        // name: 'es-US-Chirp3-HD-Despina',
+        // "name": "es-US-Chirp3-HD-Enceladus"
       },
     };
 

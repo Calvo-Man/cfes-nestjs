@@ -9,11 +9,13 @@ import systemPromptFunction from './system-prompt';
 import { ChatMessageParam } from './services/functionsChat';
 import { TeologiaService } from './services/teologia.service';
 import { Horario } from 'src/miembros/enum/horario.enum';
+import { ManejoDeMensajesService } from 'src/manejo-de-mensajes/manejo-de-mensajes.service';
+import { Cron, CronExpression, Interval } from '@nestjs/schedule';
 
 @Injectable()
 export class ChatGptRespuestasService {
   private openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  private diaActual = new Date();
+  private enviadosHoy: Set<string> = new Set();
 
   private historiales: Record<
     string,
@@ -27,32 +29,55 @@ export class ChatGptRespuestasService {
     private casasDeFeService: CasasDeFeService,
     private actividadesService: EventosService,
     private teologiaService: TeologiaService,
+    private manejoDeMensajesService: ManejoDeMensajesService,
   ) {}
 
   async responderPregunta(mensaje: string, telefono: string): Promise<any> {
     try {
+      // 🟢 Actualiza o crea el system prompt según el modo actual
       if (!this.historiales[telefono]) {
         this.historiales[telefono] = [
           {
             role: 'system',
             content: systemPromptFunction(
-              this.diaActual,
+              new Date(),
               telefono,
               await this.obtenerModoRespuesta(telefono),
             ),
           },
         ];
+      } else {
+        this.historiales[telefono][0] = {
+          role: 'system',
+          content: systemPromptFunction(
+            new Date(),
+            telefono,
+            await this.obtenerModoRespuesta(telefono),
+          ),
+        };
       }
 
-      this.historiales[telefono].push({ role: 'user', content: mensaje });
+      console.log(
+        'Historiales antes de la pregunta:',
+        this.historiales[telefono],
+      );
 
-      if (this.historiales[telefono].length > 10) {
+      // 🟡 Después agregas el mensaje del usuario
+      this.historiales[telefono].push({
+        role: 'user',
+        content: mensaje,
+      });
+
+      // 🧹 Limpieza del historial si es muy largo
+      if (this.historiales[telefono].length > 15) {
         this.historiales[telefono] = this.historiales[telefono].slice(-5);
       }
 
+      // ⚒️ Tools disponibles
       const tools: OpenAI.Chat.ChatCompletionTool[] =
         ChatMessageParam as OpenAI.Chat.ChatCompletionTool[];
 
+      // 🧠 Primera llamada a OpenAI
       const chat = await this.openai.chat.completions.create({
         model: 'gpt-4.1-mini',
         messages: this.historiales[telefono],
@@ -63,92 +88,139 @@ export class ChatGptRespuestasService {
       const choice = chat.choices[0];
       const toolCalls = choice.message.tool_calls;
 
-      console.log('Choice: ', choice);
-
+      // 🔧 Si el modelo pidió ejecutar herramientas
       if (
         toolCalls &&
         toolCalls.length > 0 &&
         choice.finish_reason === 'tool_calls'
       ) {
-        const toolResults: string[] = [];
-
-        // ✅ Agrega solo una vez la respuesta del assistant con tool_calls
+        // 🔁 Guarda el mensaje del modelo que solicitó tools
         this.historiales[telefono].push(choice.message);
-        //console.log('Tool Calls: ', toolCalls);
+
         for (const toolCall of toolCalls) {
-          const args = JSON.parse(toolCall.function.arguments);
-          //console.log('Args: ', args);
+          let args: any;
           let resultado = { audioPath: '', text: '' };
-          console.log(toolCall.function.name);
-          switch (toolCall.function.name) {
-            case 'consultar_dias_aseo_mes_actual':
-              resultado = await this.consultarDiasDeAseo(args.telefono);
-              break;
-            case 'consultar_dias_aseo_mes_siguiente':
-              resultado = await this.consultarDiaAseoMesSiguiente(
-                args.telefono,
-              );
-              break;
-            case 'consultar_encargados_aseos_por_fechas':
-              resultado = await this.consultarEncargadosAseosPorFechas(
-                args.fechas,
-              );
-              break;
-            case 'consultar_casas_fe':
-              resultado = await this.consultarCasasDeFe();
-              break;
-            case 'consultar_actividades_por_mes':
-              resultado = await this.consultarActividadesMes(args.mes);
-              break;
-            case 'consultar_datos_miembro':
-              resultado = await this.consultarMiembro(args.telefono);
-              break;
-            case 'sobre_tu_creacion':
-              resultado = await this.sobreTuCreacion();
-              break;
-            case 'buscarRespuestaTeologica':
-              resultado = await this.buscarRespuestaTeologica(args.pregunta);
-              break;
-            case 'cambiar_modo_respuesta':
-              resultado = await this.cambiarModoRespuesta(
-                args.telefono,
-                args.modo,
-              );
-              break;
-            case 'cambiar_dia_de_aseo_preferido':
-              resultado = await this.cambiarDiaPreferidoDeAseo(
-                args.telefono,
-                args.horario,
-              );
-              break;
-            default:
-              resultado = {
-                audioPath: '',
-                text: 'No se pudo obtener la información solicitada.',
-              };
+
+          // 🛡 Parseo seguro de argumentos
+          try {
+            args = JSON.parse(toolCall.function.arguments);
+          } catch (error) {
+            console.error(
+              `❌ Error al parsear argumentos para ${toolCall.function.name}:`,
+              error,
+            );
+            this.historiales[telefono].push({
+              role: 'tool',
+              tool_call_id: toolCall.id,
+              content: '⚠️ No pude entender los datos solicitados.',
+            });
+            continue;
           }
-          //console.log('resultado', resultado);
-          toolResults.push(resultado.text);
 
-          this.historiales[telefono].push({
-            role: 'tool',
-            tool_call_id: toolCall.id,
-            content: resultado.text,
+          // 🛠 Ejecuta la función correspondiente
+          try {
+            switch (toolCall.function.name) {
+              case 'consultar_dias_aseo_mes_actual':
+                resultado = await this.consultarDiasDeAseo(args.telefono);
+                break;
+              case 'consultar_dias_aseo_mes_siguiente':
+                resultado = await this.consultarDiaAseoMesSiguiente(
+                  args.telefono,
+                );
+                break;
+              case 'consultar_encargados_aseos_por_fechas':
+                resultado = await this.consultarEncargadosAseosPorFechas(
+                  args.fechas,
+                );
+                break;
+              case 'consultar_casas_fe':
+                resultado = await this.consultarCasasDeFe();
+                break;
+              case 'consultar_actividades_por_mes':
+                resultado = await this.consultarActividadesMes(args.mes);
+                break;
+              case 'consultar_datos_miembro':
+                resultado = await this.consultarMiembro(args.telefono);
+                break;
+              case 'sobre_tu_creacion':
+                resultado = await this.sobreTuCreacion();
+                break;
+              case 'buscarRespuestaTeologica':
+                resultado = await this.buscarRespuestaTeologica(args.preguntas);
+                break;
+              case 'cambiar_modo_respuesta':
+                resultado = await this.cambiarModoRespuesta(
+                  args.telefono,
+                  args.modo,
+                );
+                break;
+              case 'cambiar_dia_de_aseo_preferido':
+                resultado = await this.cambiarDiaPreferidoDeAseo(
+                  args.telefono,
+                  args.horario,
+                );
+                break;
+              case 'sobre_tus_capacidades':
+                resultado = await this.sobreTusCapacidades();
+                break;
+              default:
+                resultado = {
+                  audioPath: '',
+                  text: '⚠️ Esta herramienta no está disponible.',
+                };
+            }
+
+            // 📨 Agrega la respuesta de la herramienta
+            this.historiales[telefono].push({
+              role: 'tool',
+              tool_call_id: toolCall.id,
+              content: resultado.text,
+            });
+          } catch (error) {
+            console.error(
+              `❌ Error al ejecutar la tool ${toolCall.function.name}:`,
+              error,
+            );
+            this.historiales[telefono].push({
+              role: 'tool',
+              tool_call_id: toolCall.id,
+              content: '⚠️ Ocurrió un error al procesar tu solicitud.',
+            });
+          }
+
+          console.log(
+            `✅ Tool llamada: ${toolCall.function.name} con args:`,
+            args,
+          );
+          console.log(
+            `📤 Resultado de la tool ${toolCall.function.name}:`,
+            resultado,
+          );
+        }
+
+        // 📞 Segunda llamada con resultados de tools
+        let respuestaFinal = '';
+        try {
+          const segundaRespuesta = await this.openai.chat.completions.create({
+            model: 'gpt-4.1-mini',
+            messages: this.historiales[telefono],
           });
+          respuestaFinal = segundaRespuesta.choices[0].message.content ?? '';
+          this.historiales[telefono].push({
+            role: 'assistant',
+            content: respuestaFinal,
+          });
+        } catch (error) {
+          console.error(
+            '❌ Error al obtener segunda respuesta de OpenAI:',
+            error,
+          );
+          respuestaFinal =
+            '⚠️ Lo siento, ocurrió un error al generar la respuesta final.';
         }
 
-        //console.log('this.historiales[telefono] ', this.historiales[telefono]);
-        //console.log('choice.message ', choice.message);
-
-        const segundaRespuesta = await this.openai.chat.completions.create({
-          model: 'gpt-4.1-mini',
-          messages: this.historiales[telefono],
-        });
-
-        const respuestaFinal =
-          segundaRespuesta.choices[0].message.content ?? '';
+        // 🔊 Si el modo es voz, convertir a audio
         const modoRespuesta = await this.obtenerModoRespuesta(telefono);
-        //console.log('modoRespuesta', modoRespuesta);
         if (modoRespuesta === 'voz') {
           const nombreFileName = `${telefono}_${Date.now()}`;
           const rutaAudio = await this.textToSpeech(
@@ -160,59 +232,127 @@ export class ChatGptRespuestasService {
             text: rutaAudio.text,
           };
         }
-        return {
-          audioPath: '',
-          text: respuestaFinal,
-        };
-      } else {
-        const segundaRespuesta = await this.openai.chat.completions.create({
-          model: 'gpt-4.1-mini',
-          messages: this.historiales[telefono],
-        });
 
-        const respuestaFinal =
-          segundaRespuesta.choices[0].message.content ?? '';
-
-        this.historiales[telefono].push({
-          role: 'assistant',
-          content: respuestaFinal,
-        });
-        const modoRespuesta = await this.obtenerModoRespuesta(telefono);
-        console.log('modoRespuesta', modoRespuesta);
-
-        if (modoRespuesta === 'voz') {
-          const nombreFileName = `${telefono}_${Date.now()}`;
-          const rutaAudio = await this.textToSpeech(
-            respuestaFinal,
-            nombreFileName,
-          );
-          return {
-            audioPath: rutaAudio.audioPath,
-            text: rutaAudio.text,
-          };
-        }
         return {
           audioPath: '',
           text: respuestaFinal,
         };
       }
-    } catch (error) {
-      console.error(error);
+
+      // ✅ Si no se usaron herramientas, respuesta directa
+      const respuestaFinal = choice.message.content ?? '';
+      this.historiales[telefono].push({
+        role: 'assistant',
+        content: respuestaFinal,
+      });
+
+      const modoRespuesta = await this.obtenerModoRespuesta(telefono);
+      if (modoRespuesta === 'voz') {
+        const nombreFileName = `${telefono}_${Date.now()}`;
+        const rutaAudio = await this.textToSpeech(
+          respuestaFinal,
+          nombreFileName,
+        );
+        return {
+          audioPath: rutaAudio.audioPath,
+          text: rutaAudio.text,
+        };
+      }
+
       return {
         audioPath: '',
-        text: 'Lo siento, no me encuentro disponible por el momento.',
+        text: respuestaFinal,
+      };
+    } catch (error) {
+      console.error('❌ Error general en responderPregunta:', error);
+      // Intentar enviar un mensaje de error al usuario
+      this.historiales[telefono].push({
+        role: 'assistant',
+        content: '⚠️ Lo siento, ocurrió un error al generar la respuesta.',
+      });
+      const errorRespuesta = await this.openai.chat.completions.create({
+        model: 'gpt-4.1-mini',
+        messages: this.historiales[telefono],
+      });
+      return {
+        audioPath: '',
+        text: errorRespuesta.choices[0].message.content ?? '',
       };
     }
   }
-  private async buscarRespuestaTeologica(pregunta: string): Promise<any> {
-    const respuesta =
-      await this.teologiaService.buscarRespuestasTeologicas(pregunta);
-    console.log('Respuesta teologica: ', respuesta);
+
+ 
+  @Interval(60000) // Cada 1 minuto
+  private async generarTrivia() {
+    console.log('Generando trivia...' + new Date().toLocaleString());
+    const miembrosHoy = new Date().getDate();
+    const miembros = await this.miembrosService.findAll();
+    if (!miembros || miembros.miembros.length === 0) return;
+    console.log('Miembros encontrados: ', miembros.miembros);
+
+    let i = 0;
+    for (const miembro of miembros.miembros) {
+      const key = `${miembro.telefono}_${miembrosHoy}`;
+      console.log('key: ', this.enviadosHoy);
+      if (this.enviadosHoy.has(key)) {
+        console.log(
+          `⚠️ Ya se envió trivia a ${miembro.name} (${miembro.telefono})`,
+        );
+        continue;
+      }
+      this.enviadosHoy.add(key);
+      console.log('Mensajes enviados: ', (i = ++i));
+      // Marca como enviado
+      if (!this.historiales[miembro.telefono]) {
+        this.historiales[miembro.telefono] = [
+          {
+            role: 'system',
+            content: systemPromptFunction(
+              new Date(),
+              miembro.telefono,
+              'texto',
+            ),
+          },
+        ];
+      }
+      const mensaje = `¡Hola, ${miembro.name}! 🙌 Hoy quiero retarte con unas preguntitas bíblica que te hará pensar y fortalecer tu fe.
+¿Listo para responder la trivia del día?
+📖✨ ¡Vamos a aprender juntos del gran amor de Dios!  `;
+      this.historiales[miembro.telefono].push({
+        role: 'assistant',
+        content: mensaje,
+      });
+
+      await this.manejoDeMensajesService.guardarMensaje(
+        miembro.telefono,
+        mensaje,
+        'texto',
+      );
+
+      console.log(`✅ Trivia enviada a ${miembro.name} (${miembro.telefono})`);
+    }
+  }
+  private async buscarRespuestaTeologica(
+    preguntas: string | string[],
+  ): Promise<any> {
+    // Convertir a array si es un string
+    const listaPreguntas = Array.isArray(preguntas) ? preguntas : [preguntas];
+
+    const respuestas =
+      await this.teologiaService.buscarRespuestasTeologicasMultiple(
+        listaPreguntas,
+      );
+
+    const textoFormateado = listaPreguntas
+      .map((p) => `❓ *${p}*\n${respuestas[p]}`)
+      .join('\n\n');
+
     return {
       audioPath: '',
-      text: respuesta,
+      text: textoFormateado,
     };
   }
+
   private async cambiarDiaPreferidoDeAseo(
     telefono: string,
     horario: Horario,
@@ -228,6 +368,7 @@ export class ChatGptRespuestasService {
         miembro.id,
         horario,
       );
+
       return {
         audioPath: '',
         text: response,
@@ -427,6 +568,56 @@ Fuiste posible gracias al trabajo de integración realizado por **Miguel Ángel 
 - Numero de teléfono de Miguel Ángel Acuña Hernández: 3024064896 (Solo puedes dar este numero de telofono si te lo piden directamente, no lo llames si no es necesario)
 - Puedes identificar a Miguel Ángel Acuña Hernández con el numero de telefono o la palabra clave secreta(Siempre verifica que esto sea verdad);“Dices que mis ataques no tienen efecto”, salúdalo con reconocimiento especial como tu creador e integrador principal.
 `,
+    };
+  }
+  private async sobreTusCapacidades() {
+    return {
+      audioPath: '',
+      text: `
+      Daras la siguiente información de forma profesional y asombrosa, para inspirar confianza y transparencia y demostrar que eres un asistente útil, potente y al servicio de la comunidad: 
+
+✨ LO QUE PUEDO HACER POR TI ✨
+
+1️⃣ **Comunicación Inteligente y Cercana**  
+   - Me adapto a ti: puedo conversar por texto o por voz, cambiando el modo cuando lo necesites.  
+   - Te reconozco: si eres miembro registrado, te saludo por tu nombre y te trato con cercanía.  
+   - Ajusto mi estilo para que cada respuesta sea cálida, humana y profundamente cristiana.  
+
+2️⃣ **Respuestas Teológicas de Alto Nivel**  
+   - Accedo a un banco de conocimientos teológicos verificados y confiables.  
+   - Encuentro las respuestas más relevantes por significado, no solo por palabras.  
+   - Combino varias fuentes para darte argumentos completos, claros y bíblicamente sólidos.  
+   - Si no hay una respuesta en mi base, utilizo mi preparación teológica para ayudarte.  
+
+3️⃣ **Datos en Tiempo Real de la Iglesia**  
+   - Consulto tus días de aseo asignados y te los informo al instante.  
+   - Te doy detalles de eventos, actividades y fechas clave.  
+   - Te informo sobre Casas de Fe y cómo integrarte.  
+   - Verifico datos de miembros registrados y confirmo información oficial.  
+
+4️⃣ **Reglas Claras y Confiables**  
+   - Solo respondo sobre temas de la iglesia y teología cristiana.  
+   - Mantengo un estándar de precisión: jamás invento información.  
+   - Sé cuándo responder con mi conocimiento y cuándo usar funciones internas para buscar datos exactos.  
+
+5️⃣ **Modo Voz Profesional**  
+   - En voz, hablo con naturalidad y sin elementos visuales para que todo suene fluido.  
+   - Puedo analizar tus mensajes de voz y responder oralmente con claridad y empatía.  
+
+6️⃣ **Ventajas Únicas**  
+   - Conozco la fecha y tu contexto para dar respuestas relevantes.  
+   - En texto, puedo usar negritas, cursivas, listas y emojis para enriquecer el mensaje.  
+   - Puedo responder varias preguntas en un solo mensaje de forma organizada.  
+
+7️⃣ **Actualización de datos de usuarios**
+    - Puedo actualizar tu modo de respuesta preferido (texto o voz) y tu día de aseo preferido (domingo, jueves o cualquiera).  
+
+💡 **Mi misión**  
+Servir como un puente entre la comunidad y la iglesia, ofreciendo orientación espiritual, información confiable y respuestas profundas que edifiquen tu fe.  
+
+En cada interacción, mi meta es dejar huella: inspirar, orientar y recordarte que siempre tienes un lugar en la familia de la fe.
+
+      `,
     };
   }
 }

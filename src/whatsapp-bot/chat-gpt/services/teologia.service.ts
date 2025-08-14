@@ -19,21 +19,25 @@ export class TeologiaService {
     });
   }
 
-  async crearEmbedding(texto: string): Promise<number[]> {
+  async crearEmbedding(texto: string): Promise<any> {
     try {
       const response = await this.openai.embeddings.create({
         input: texto,
         model: 'text-embedding-3-small',
       });
+      // ✅ Retorna el vector de embedding
       return response.data[0].embedding;
     } catch (error) {
       console.warn('⚠️ OpenAI Embedding falló. Usando embedding simulado.');
-      return Array.from({ length: 1536 }, () => Math.random()); // Embedding de prueba
+      return 'No se pudo crear el embedding';
     }
   }
 
-  async agregarPregunta(pregunta: string, respuesta: string) {
-    const vector = await this.crearEmbedding(pregunta);
+  async agregarPregunta(pregunta: string, respuesta: string, fuente: string) {
+    // Limpieza segura
+    const preguntaLimpia = this.limpiarTexto(pregunta);
+    const respuestaLimpia = this.limpiarTexto(respuesta);
+    const vector = await this.crearEmbedding(preguntaLimpia);
     const id = uuidv4();
     try {
       const response = await axios.put(
@@ -44,9 +48,9 @@ export class TeologiaService {
               id,
               vector,
               payload: {
-                pregunta,
-                respuesta,
-                fuente: 'gotquestions.org',
+                preguntaLimpia,
+                respuestaLimpia,
+                fuente,
               },
             },
           ],
@@ -64,8 +68,18 @@ export class TeologiaService {
       throw error;
     }
   }
-  async buscarRespuestasTeologicas(texto: string): Promise<string> {
-    const vector = await this.crearEmbedding(texto);
+  limpiarTexto(texto: string): string {
+    return texto
+      .replace(/\r?\n|\r/g, '\n') // Normaliza saltos de línea
+      .replace(/\s{2,}/g, ' ') // Reduce espacios dobles o más
+      .replace(/"/g, '\\"') // Escapa comillas dobles
+      .trim(); // Quita espacios extremos
+  }
+async buscarRespuestasTeologicasMultiple(
+  preguntas: string[],
+): Promise<Record<string, string>> {
+  const promesas = preguntas.map(async (pregunta) => {
+    const vector = await this.crearEmbedding(pregunta);
 
     const { data } = await axios.post(
       `${this.QDRANT_URL}/collections/${this.COLLECTION}/points/search`,
@@ -83,16 +97,34 @@ export class TeologiaService {
       },
     );
 
-    const resultados = data.result || [];
+    const resultados = (data.result || [])
+      .filter((r: any) => r.payload?.respuesta)
+      .sort((a: any, b: any) => b.score - a.score);
 
-    const respuestas = resultados.map(
-      (resultado: any) => resultado.payload.respuesta,
-    );
-
-    if (respuestas.length === 0) {
-      return '❌ No encontré una respuesta teológica relevante para tu pregunta.';
+    if (resultados.length === 0) {
+      return [
+        pregunta,
+        '❌ No encontré una respuesta teológica relevante.',
+      ] as const;
     }
 
-    return respuestas.join('\n\n'); // 👈 Une respuestas con doble salto de línea
-  }
+    const { listaFormateada } = resultados.reduce(
+      (acc: any, r: any) => {
+        if (!acc.vistos.has(r.payload.respuesta)) {
+          acc.vistos.add(r.payload.respuesta);
+          acc.listaFormateada.push(
+            `🔹 *Relevancia:* ${(r.score * 100).toFixed(2)}%\n${r.payload.respuesta}\n${r.payload.fuente}`
+          );
+        }
+        return acc;
+      },
+      { vistos: new Set<string>(), listaFormateada: [] as string[] }
+    );
+
+    return [pregunta, listaFormateada.join('\n\n')] as const;
+  });
+
+  const resultadosArray = await Promise.all(promesas);
+  return Object.fromEntries(resultadosArray);
+}
 }

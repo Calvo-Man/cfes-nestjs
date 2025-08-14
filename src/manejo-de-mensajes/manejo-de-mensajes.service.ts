@@ -11,8 +11,8 @@ export class ManejoDeMensajesService {
     private mensasRepository: Repository<Mensajes>,
   ) {}
 
-  async guardarMensaje(telefono: string, contenido: string) {
-    const mensaje = this.mensasRepository.create({ telefono, contenido });
+  async guardarMensaje(telefono: string, contenido: string, enviar_por: string) {
+    const mensaje = this.mensasRepository.create({ telefono, contenido, enviar_por });
     return this.mensasRepository.save(mensaje);
   }
 

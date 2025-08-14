@@ -12,6 +12,8 @@ import { AsistenciasService } from './asistencias.service';
 import { CreateAsistenciaDto } from './dto/create-asistencia.dto';
 import { UpdateAsistenciaDto } from './dto/update-asistencia.dto';
 import { RolesGuard } from 'src/roles/role-guard/role.guard';
+import { Roles } from 'src/roles/decorator/roles.decorator';
+import { Rol } from 'src/roles/enum/roles.enum';
 @UseGuards(RolesGuard)
 @Controller('asistencias')
 export class AsistenciasController {
@@ -43,8 +45,9 @@ export class AsistenciasController {
   ) {
     return this.asistenciasService.update(+id, updateAsistenciaDto);
   }
-
+  
   @Delete(':id')
+  @Roles(Rol.ADMINISTRADOR, Rol.LIDER) // Asegúrate de que el rol 'administrador' esté definido en tu enum de roles
   remove(@Param('id') id: string) {
     return this.asistenciasService.remove(+id);
   }

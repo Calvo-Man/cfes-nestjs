@@ -20,6 +20,9 @@ export class MiembroDTO {
   @Expose()
   telefono: string;
 
+  @Expose()
+  cedula: string;
+
   
 
   // NO agregues @Expose() para password

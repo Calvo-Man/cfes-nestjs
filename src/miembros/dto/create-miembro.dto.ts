@@ -25,6 +25,10 @@ export class CreateMiembroDto {
   @IsNotEmpty()
   telefono: string;
   
+  @IsString()
+  @IsNotEmpty()
+  cedula: string;
+  
   @IsEnum(Rol)
   @IsNotEmpty()
   rol: Rol;

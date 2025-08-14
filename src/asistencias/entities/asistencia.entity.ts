@@ -34,12 +34,12 @@ export class Asistencia {
   @Column('float')
   longitud: number;
 
-  @Column()
+  @Column({nullable: true, type: 'float', default: null})
   distancia: number;
   @Column({ type: 'enum', enum: Categoria, default: Categoria.Adultos })
   categoria: string;
 
-  @Column()
+  @Column({ default: false })
   mensaje_enviado: boolean;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })

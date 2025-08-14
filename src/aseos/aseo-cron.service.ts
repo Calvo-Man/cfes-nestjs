@@ -175,6 +175,7 @@ Gracias por tu colaboracion.
         await this.manejoDeMensajesService.guardarMensaje(
           miembro.telefono,
           mensaje,
+          'Sistema',
         );
       }
       this.logger.log(

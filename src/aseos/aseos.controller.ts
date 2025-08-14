@@ -17,18 +17,12 @@ import { Request } from 'express';
 import { AseoCronService } from './aseo-cron.service';
 import { RolesGuard } from 'src/roles/role-guard/role.guard';
 @UseGuards(RolesGuard)
-
 @Controller('aseos')
 export class AseosController {
   constructor(
     private readonly aseosService: AseosService,
     private readonly aseoCronService: AseoCronService,
   ) {}
-
-  @Post()
-  create(@Body() createAseoDto: CreateAseoDto) {
-    return this.aseosService.create(createAseoDto);
-  }
 
   @Get()
   findAll() {

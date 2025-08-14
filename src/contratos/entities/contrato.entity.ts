@@ -6,13 +6,13 @@ export class Contrato {
    @PrimaryGeneratedColumn()
    id: number
 
-   @Column({ type: 'longtext' })
+   @Column({ type: 'longtext', nullable: true })
    firma: string
 
    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
    fecha: Date
 
-   @Column()
+   @Column({default: true})
    vigente: boolean
 
    @ManyToOne(() => Miembro, (miembro) => miembro.contratos)

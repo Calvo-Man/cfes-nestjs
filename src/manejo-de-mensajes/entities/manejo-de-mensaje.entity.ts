@@ -12,6 +12,9 @@ export class Mensajes {
   @Column('text')
   contenido: string;
 
+  @Column({nullable: true})
+  enviar_por: string;
+
   @Column({ default: false })
   enviado: boolean;
 

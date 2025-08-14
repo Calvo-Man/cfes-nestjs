@@ -17,8 +17,8 @@ import { AuthModule } from './auth/auth.module';
 import { MiembroCasaDeFeModule } from './miembro-casa-de-fe/miembro-casa-de-fe.module';
 import { WhatsappBotModule } from './whatsapp-bot/whatsapp-bot.module';
 import { ManejoDeMensajesModule } from './manejo-de-mensajes/manejo-de-mensajes.module';
-import { GeocodingService } from './geolocalizacion/geocoding.service';
 import { ContratosModule } from './contratos/contratos.module';
+import { ChatGptRespuestasModule } from './whatsapp-bot/chat-gpt/respuesta-mensajes.module';
 
 @Module({
   imports: [
@@ -62,6 +62,7 @@ import { ContratosModule } from './contratos/contratos.module';
     WhatsappBotModule,
     ManejoDeMensajesModule,
     ContratosModule,
+    ChatGptRespuestasModule
     
   ],
   controllers: [AppController],

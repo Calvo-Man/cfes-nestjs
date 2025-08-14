@@ -64,10 +64,11 @@ export const ChatMessageParam = [
             type: 'string',
             description: 'Número del miembro que te esta preguntando',
           },
-          fechas:{
+          fechas: {
             type: 'array',
             items: { type: 'string' },
-            description: 'Lista de fechas en el formato YYYY-MM-DD, separadas por comas',
+            description:
+              'Lista de fechas en el formato YYYY-MM-DD, separadas por comas',
           },
         },
         required: ['telefono', 'fechas'],
@@ -140,7 +141,8 @@ export const ChatMessageParam = [
         required: ['modo', 'telefono'],
       },
     },
-  },{
+  },
+  {
     type: 'function',
     function: {
       name: 'cambiar_dia_de_aseo_preferido',
@@ -153,40 +155,58 @@ export const ChatMessageParam = [
             type: 'string',
             description: 'Número del miembro que te esta preguntando',
           },
+          horario: {
+            type: 'string',
+            description: 'Dia de aseo preferido por el usuario',
+          },
         },
-        required: ['telefono'],
+        required: ['telefono', 'horario'],
+      },
+    },
+  },
+{
+  type: 'function',
+  function: {
+    name: 'buscarRespuestaTeologica',
+    description:
+      'Busca una o varias respuestas teológicas en la base de datos usando la(s) pregunta(s) como consulta semántica. Antes de buscar, reformula cada pregunta para que sea clara, específica, y contenga términos teológicos y bíblicos relevantes, eliminando ambigüedades o detalles irrelevantes, con el fin de obtener la mejor coincidencia posible.',
+    parameters: {
+      type: 'object',
+      properties: {
+        preguntas: {
+          type: 'array',
+          description:
+            'Lista de preguntas reformuladas para optimizar la búsqueda semántica en Qdrant. Cada pregunta debe estar escrita en lenguaje claro y preciso, incluir términos teológicos o bíblicos relevantes, y evitar pronombres ambiguos o frases vagas.',
+          items: {
+            type: 'string',
+          },
+        },
+      },
+      required: ['preguntas'],
+    },
+  },
+}
+,
+  {
+    type: 'function',
+    function: {
+      name: 'sobre_tu_creacion',
+      description: 'Describe tu creacion.',
+      parameters: {
+        type: 'object',
+        properties: {},
       },
     },
   },
   {
     type: 'function',
     function: {
-      name: 'buscarRespuestaTeologica',
-      description:
-        'Busca respuestas teologicas en la base de datos usando el contenido de la pregunta para dar una respuesta basada en argumentos.',
+      name: 'sobre_tus_capacidades',
+      description: 'Describe tus capacidades.',
       parameters: {
         type: 'object',
-        properties: {
-          pregunta: {
-            type: 'string',
-            description: 'Pregunta del usuario',
-          },
-
-        },
-        required: ['pregunta'],
+        properties: {},
       },
     },
   },
-  // {
-  //   type: 'function',
-  //   function: {
-  //     name: 'sobre_tu_creacion',
-  //     description:
-  //       'Describe la creación de tu bot y quien lo hizo.',
-  //     parameters: {
-  //       type: 'object',
-  //       properties: {},
-  //     },
-  //   },
-  // }
 ];

@@ -26,30 +26,36 @@ import { ContratosService } from 'src/contratos/contratos.service';
 import { Contrato } from 'src/contratos/entities/contrato.entity';
 import { TeologiaService } from './chat-gpt/services/teologia.service';
 import { TeologiaController } from './chat-gpt/controllers/teologia.controller';
+import { JwtService } from '@nestjs/jwt';
+import { ChatGptRespuestasModule } from './chat-gpt/respuesta-mensajes.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Aseo,Miembro,Mensajes,Evento,CasasDeFe,Contrato]),
-    ContratosModule
+    //TypeOrmModule.forFeature([Aseo,Miembro,Mensajes,Evento,CasasDeFe,Contrato]),
+    ContratosModule,
+    ChatGptRespuestasModule,
+    MiembrosModule,
+    ManejoDeMensajesModule
   ],
   controllers: [
     TeologiaController
   ],
   providers: [
     WhatsappBotService,
-    ChatGptRespuestasService,
-    ContratosService,
+    //ChatGptRespuestasService,
+   // ContratosService,
     TranscripcionService,
-    AseosService,
-    ManejoDeMensajesService,
-    MiembrosService,
-    EventosService,
-    CasasDeFeService,
-    GeocodingService,
-    OpenRouteService,
-    OpenCageService,
-    TTSService,
-    TeologiaService
+    //AseosService,
+    //ManejoDeMensajesService,
+    //MiembrosService,
+    //EventosService,
+    //CasasDeFeService,
+    //GeocodingService,
+    //OpenRouteService,
+    //OpenCageService,
+    //TTSService,
+    TeologiaService,
+    JwtService
   ],
   exports: [WhatsappBotService,],
 })

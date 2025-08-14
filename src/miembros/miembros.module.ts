@@ -6,10 +6,7 @@ import { Miembro } from './entities/miembro.entity';
 import { JwtService } from '@nestjs/jwt';
 import { RolesGuard } from 'src/roles/role-guard/role.guard';
 import { Aseo } from 'src/aseos/entities/aseo.entity';
-import { WhatsappBotModule } from 'src/whatsapp-bot/whatsapp-bot.module';
-import { WhatsappBotService } from 'src/whatsapp-bot/whatsapp-bot.service';
 import { ManejoDeMensajesModule } from 'src/manejo-de-mensajes/manejo-de-mensajes.module';
-import { ChatGptRespuestasService } from 'src/whatsapp-bot/chat-gpt/respuesta-mensajes.service';
 import { AseosService } from 'src/aseos/aseos.service';
 import { EventosModule } from 'src/eventos/eventos.module';
 import { CasasDeFeService } from 'src/casas-de-fe/casas-de-fe.service';
@@ -25,8 +22,8 @@ import { TeologiaService } from 'src/whatsapp-bot/chat-gpt/services/teologia.ser
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Miembro, Aseo, CasasDeFe,Contrato]),
-    ManejoDeMensajesModule,
+    TypeOrmModule.forFeature([Miembro, Aseo, CasasDeFe, Contrato]),
+    forwardRef(() => ManejoDeMensajesModule), // ← importante
     ContratosModule,
     forwardRef(() => EventosModule),
   ],
@@ -36,14 +33,14 @@ import { TeologiaService } from 'src/whatsapp-bot/chat-gpt/services/teologia.ser
     ContratosService,
     JwtService,
     RolesGuard,
-    ChatGptRespuestasService,
+    //ChatGptRespuestasService,
     AseosService,
     CasasDeFeService,
     GeocodingService,
     OpenRouteService,
     OpenCageService,
     TTSService,
-    TeologiaService
+    TeologiaService,
   ],
   exports: [MiembrosService],
 })

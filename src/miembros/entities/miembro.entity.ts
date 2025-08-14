@@ -34,6 +34,9 @@ export class Miembro {
   @Column({ length: 12 , unique: true})
   telefono: string;
 
+  @Column({ length: 12, nullable: true })
+  cedula: string;
+
   @Column({ default: true })
   activo: boolean;
 

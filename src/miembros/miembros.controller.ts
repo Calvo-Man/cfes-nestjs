@@ -17,28 +17,25 @@ import { Roles } from 'src/roles/decorator/roles.decorator';
 import { Rol } from 'src/roles/enum/roles.enum';
 import { Horario } from './enum/horario.enum';
 @Controller('miembros')
-//@UseGuards(RolesGuard)
+@UseGuards(RolesGuard)
 export class MiembrosController {
   constructor(private readonly miembrosService: MiembrosService) {}
 
   @Post('create')
-  //@Roles(Rol.PASTOR)
+  @Roles(Rol.PASTOR, Rol.ADMINISTRADOR)
   create(@Body() createMiembroDto: CreateMiembroDto) {
     return this.miembrosService.create(createMiembroDto);
   }
-  // @Post('poblar/:cantidad')
-  // async poblar(@Param('cantidad') cantidad: string) {
-  //   const n = parseInt(cantidad);
-  //   return this.miembrosService.poblarMiembrosDePrueba(n);
-  // }
+  @Patch('cambiarDisponibilidadDeAseo/:id')
+  @Roles(Rol.PASTOR, Rol.ADMINISTRADOR)
+  cambiarDisponibilidadDeAseo(@Param('id') id: string) {
+    return this.miembrosService.cambiarDisponibilidadAseo(+id);
+  }
 
-  @Roles(Rol.PASTOR)
   @Get('count')
   count() {
     return this.miembrosService.countMiembros();
   }
-
- 
   @Get()
   findAll() {
     return this.miembrosService.getMiembros();
@@ -59,16 +56,22 @@ export class MiembrosController {
     return this.miembrosService.update(+id, updateMiembroDto);
   }
   @Patch('horario/:id')
-  updateHorario(@Param('id') id: string, @Body() updateMiembroDto:UpdateMiembroDto) {
+  updateHorario(
+    @Param('id') id: string,
+    @Body() updateMiembroDto: UpdateMiembroDto,
+  ) {
     return this.miembrosService.updateHorarioAseo(+id, updateMiembroDto);
   }
 
   @Delete(':id')
+  @Roles(Rol.PASTOR, Rol.ADMINISTRADOR)
   remove(@Param('id') id: string) {
     return this.miembrosService.remove(+id);
   }
-  @Delete('softDelete/:id')
+
+  @Delete('cambiarEstado/:id')
+  @Roles(Rol.PASTOR, Rol.ADMINISTRADOR)
   softDelete(@Param('id') id: string) {
-    return this.miembrosService.softDelete(+id);
+    return this.miembrosService.cambiarEstadoDeMiembro(+id);
   }
 }

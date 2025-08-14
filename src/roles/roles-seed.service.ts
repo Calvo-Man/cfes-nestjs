@@ -12,7 +12,7 @@ export class RoleSeedService {
   ) {}
 
   async createRoles() {
-    const roles = ['pastor', 'servidor', 'lider']; // Lista de roles a crear
+    const roles = ['pastor', 'servidor', 'lider', 'administrador']; // Lista de roles a crear
 
     for (const roleName of roles) {
       // Verificar si el rol ya existe
