@@ -46,7 +46,6 @@ export class CasasDeFeController {
 
   @Get('user/:user')
   findAllByUser(@Param('user') user: string) {
-    console.log(user);
     return this.casasDeFeService.findAllByUser(user);
   }
   @Get('count')

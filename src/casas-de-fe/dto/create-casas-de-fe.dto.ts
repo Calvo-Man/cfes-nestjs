@@ -1,4 +1,4 @@
-import { IsArray, IsEnum, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsArray, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Categoria } from '../enum/categoria.enum';
 
 export class CreateCasasDeFeDto {
@@ -17,6 +17,10 @@ export class CreateCasasDeFeDto {
   @IsString()
   @IsNotEmpty()
   direccion: string;
+  
+  @IsString()
+  @IsOptional()
+  barrio?: string;
 
   @IsArray()
   @IsNotEmpty()

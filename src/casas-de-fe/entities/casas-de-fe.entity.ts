@@ -28,8 +28,6 @@ export class CasasDeFe {
   @JoinTable()
   encargadosId: Miembro[];
 
-
-
   @Column('float')
   latitud: number;
 
@@ -39,8 +37,12 @@ export class CasasDeFe {
   @Column()
   direccion: string;
 
+  @Column({ nullable: true })
+  barrio: string;
+
   @OneToMany(() => Asistencia, (asistencia) => asistencia.casasDeFe)
   asistencias: Asistencia[];
+
   @OneToMany(() => MiembroCasaDeFe, (miembroCasa) => miembroCasa.casasDeFe)
   miembros: MiembroCasaDeFe[];
 }

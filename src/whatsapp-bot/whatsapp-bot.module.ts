@@ -8,10 +8,10 @@ import { TeologiaService } from './chat-gpt/services/teologia.service';
 import { TeologiaController } from './chat-gpt/controllers/teologia.controller';
 import { JwtService } from '@nestjs/jwt';
 import { ChatGptRespuestasModule } from './chat-gpt/respuesta-mensajes.module';
+import { PeticionesModule } from 'src/peticiones/peticiones.module';
 
 @Module({
   imports: [
-    
     ContratosModule,
     ChatGptRespuestasModule,
     MiembrosModule,

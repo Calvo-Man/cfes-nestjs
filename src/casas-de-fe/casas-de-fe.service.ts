@@ -182,27 +182,39 @@ export class CasasDeFeService {
     encargados: casas.map((c) => c.encargadosId.map((e) => [e.name, e.apellido,e.rol])),
    }
   }
-  async findAllByUser(user: string) {
-    const miembro = await this.miembroRepository.findOne({
-      where: { user: user },
-    });
-    if (!miembro) {
-      throw new BadRequestException('Miembro no encontrado');
-    }
-    
-
-    const casas = await this.casasDeFeRepository.find({
-      where: { encargadosId: miembro},
-      relations: ['encargadosId', 'asistencias', 'miembros'],
-      order: { id: 'DESC' },
-    });
-    if (!casas) {
-      throw new NotFoundException('Casas de fe no encontradas');
-    }
-    return plainToInstance(CasaDeFeDTO, casas, {
-      excludeExtraneousValues: true,
-    });
+async findAllByUser(user: string) {
+  const miembro = await this.miembroRepository.findOne({
+    where: { user },
+  });
+  if (!miembro) {
+    throw new BadRequestException('Miembro no encontrado');
   }
+
+  const casas = await this.casasDeFeRepository
+    .createQueryBuilder('casa')
+    .leftJoinAndSelect('casa.encargadosId', 'encargado')
+    .leftJoinAndSelect('casa.asistencias', 'asistencias')
+    .leftJoinAndSelect('casa.miembros', 'miembros')
+    // 🔹 El filtro va en EXISTS sobre la tabla intermedia
+    .where(qb => {
+      const subQuery = qb.subQuery()
+        .select('1')
+        .from('casas_de_fe_encargados_id_miembro', 'cemi') // 👈 tabla intermedia
+        .where('cemi.casasDeFeId = casa.id')
+        .andWhere('cemi.miembroId = :id')
+        .getQuery();
+      return `EXISTS ${subQuery}`;
+    })
+    .setParameter('id', miembro.id)
+    .orderBy('casa.id', 'DESC')
+    .getMany();
+
+  return plainToInstance(CasaDeFeDTO, casas, {
+    excludeExtraneousValues: true,
+  });
+}
+
+
 
   async findOne(id: number) {
     const punto = await this.casasDeFeRepository.findOne({

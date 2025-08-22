@@ -2,6 +2,45 @@ export const ChatMessageParam = [
   {
     type: 'function',
     function: {
+      name: 'guardar_peticion_de_oracion',
+      description:
+        'Guarda la peticion de oracion de las personas en la base de datos',
+      parameters: {
+        type: 'object',
+        properties: {
+          contenido: {
+            type: 'string',
+            description:
+              'Texto original de la petición de oración enviada por la persona',
+          },
+          telefono: {
+            type: 'string',
+            description:
+              'Número de WhatsApp de la persona que solicita la petición.',
+          },
+          nombre: {
+            type: 'string',
+            description:
+              'Nombre del usuario si lo da. Si no lo menciona, puedes preguntar una sola vez; si aún no lo da, usa "Anónimo".',
+          },
+          categoria: {
+            type: 'string',
+            description:
+              'Clasificación de la petición, determinada automáticamente por ti. Ej: "Salud", "Familia", "Trabajo y Finanzas", "Espiritual", "Protección", "Estudios", "Agradecimiento", "Otros".',
+          },
+          redaccion: {
+            type: 'string',
+            description:
+              'Texto redactado de la petición de oración de forma clara y usando decoración profesional como negrita, combinando el contenido,telefono,nombre y categoría, para ser compartido con la comunidad de CEFES por WhatsApp.',
+          },
+        },
+        required: ['telefono', 'contenido', 'categoria', 'redaccion', 'nombre'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'consultar_dias_aseo_mes_actual',
       description:
         'Devuelve los días de aseo del miembro que te esta preguntando en el mes actual',
@@ -164,29 +203,28 @@ export const ChatMessageParam = [
       },
     },
   },
-{
-  type: 'function',
-  function: {
-    name: 'buscarRespuestaTeologica',
-    description:
-      'Busca una o varias respuestas teológicas en la base de datos usando la(s) pregunta(s) como consulta semántica. Antes de buscar, reformula cada pregunta para que sea clara, específica, y contenga términos teológicos y bíblicos relevantes, eliminando ambigüedades o detalles irrelevantes, con el fin de obtener la mejor coincidencia posible.',
-    parameters: {
-      type: 'object',
-      properties: {
-        preguntas: {
-          type: 'array',
-          description:
-            'Lista de preguntas reformuladas para optimizar la búsqueda semántica en Qdrant. Cada pregunta debe estar escrita en lenguaje claro y preciso, incluir términos teológicos o bíblicos relevantes, y evitar pronombres ambiguos o frases vagas.',
-          items: {
-            type: 'string',
+  {
+    type: 'function',
+    function: {
+      name: 'buscarRespuestaTeologica',
+      description:
+        'Busca una o varias respuestas teológicas en la base de datos usando la(s) pregunta(s) como consulta semántica. Antes de buscar, reformula cada pregunta para que sea clara, específica, y contenga términos teológicos y bíblicos relevantes, eliminando ambigüedades o detalles irrelevantes, con el fin de obtener la mejor coincidencia posible.',
+      parameters: {
+        type: 'object',
+        properties: {
+          preguntas: {
+            type: 'array',
+            description:
+              'Lista de preguntas para la búsqueda semántica en Qdrant. Cada pregunta debe estar escrita en lenguaje claro y preciso, incluir términos teológicos o bíblicos relevantes, y evitar pronombres ambiguos o frases vagas.',
+            items: {
+              type: 'string',
+            },
           },
         },
+        required: ['preguntas'],
       },
-      required: ['preguntas'],
     },
   },
-}
-,
   {
     type: 'function',
     function: {

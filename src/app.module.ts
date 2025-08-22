@@ -19,6 +19,7 @@ import { WhatsappBotModule } from './whatsapp-bot/whatsapp-bot.module';
 import { ManejoDeMensajesModule } from './manejo-de-mensajes/manejo-de-mensajes.module';
 import { ContratosModule } from './contratos/contratos.module';
 import { ChatGptRespuestasModule } from './whatsapp-bot/chat-gpt/respuesta-mensajes.module';
+import { PeticionesModule } from './peticiones/peticiones.module';
 
 @Module({
   imports: [
@@ -62,7 +63,8 @@ import { ChatGptRespuestasModule } from './whatsapp-bot/chat-gpt/respuesta-mensa
     WhatsappBotModule,
     ManejoDeMensajesModule,
     ContratosModule,
-    ChatGptRespuestasModule
+    ChatGptRespuestasModule,
+    PeticionesModule
     
   ],
   controllers: [AppController],

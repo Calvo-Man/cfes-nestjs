@@ -33,6 +33,10 @@ export class AsistenciasController {
   count() {
     return this.asistenciasService.countAsistenciasThisMonth();
   }
+  @Get('countAllPerMonth')
+  countAllPerMonth() {
+    return this.asistenciasService.countAsistenciasPorMeses();
+  }
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.asistenciasService.findOneById(+id);

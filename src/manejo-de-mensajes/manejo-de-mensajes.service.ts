@@ -14,60 +14,76 @@ export class ManejoDeMensajesService {
     private mensasRepository: Repository<Mensajes>,
     @Inject(forwardRef(() => MiembrosService))
     private miembrosService: MiembrosService,
-    private readonly asistenciasService: AsistenciasService
+    private readonly asistenciasService: AsistenciasService,
   ) {}
 
-  async guardarMensaje(telefono: string, contenido: string, enviar_por: string) {
-    const mensaje = this.mensasRepository.create({ telefono, contenido, enviar_por });
+  async guardarMensaje(
+    telefono: string,
+    contenido: string,
+    enviar_por: string,
+  ) {
+    const mensaje = this.mensasRepository.create({
+      telefono,
+      contenido,
+      enviar_por,
+    });
     return this.mensasRepository.save(mensaje);
   }
   // Método para guardar varios mensajes:Lideres,servidores o asistentes
   // Este método recibe un array de categorias y guarda un mensaje para cada uno.
   async guardarVariosMensajes(mensajeDto: CreateManejoDeMensajeDto) {
-  const { miembros } = await this.miembrosService.getMiembros();
-  const asistentes = await this.asistenciasService.findAll();
+    const { miembros } = await this.miembrosService.getMiembros();
+    const asistentes = await this.asistenciasService.findAll();
 
-  // Array para acumular los destinatarios
-  let destinatarios: any[] = [];
+    // Array para acumular los destinatarios
+    let destinatarios: any[] = [];
 
-  for (const categoria of mensajeDto.enviado_a) {
-    let filtrados: any[] = [];
+    for (const categoria of mensajeDto.enviado_a.map((m) => m.toLowerCase())) {
+      let filtrados: any[] = [];
 
-    switch (categoria) {
-      case 'lideres':
-        filtrados = miembros.filter(m => m.rol === 'lider');
-        break;
-      case 'servidores':
-        filtrados = miembros.filter(m => m.rol === 'servidor');
-        break;
-      case 'asistentes':
-        filtrados = asistentes;
-        break;
-      default:
-        console.warn(`Categoría desconocida: ${categoria}`);
-        continue;
+      switch (categoria) {
+        case 'pastores':
+          filtrados = miembros.filter((m) => m.rol === 'pastor');
+          break;
+        case 'administradores':
+          filtrados = miembros.filter((m) => m.rol === 'administrador');
+          break;
+        case 'lideres':
+          filtrados = miembros.filter((m) => m.rol === 'lider');
+          break;
+        case 'servidores':
+          filtrados = miembros.filter((m) => m.rol === 'servidor');
+          break;
+        case 'asistentes':
+          filtrados = asistentes;
+          break;
+        default:
+          console.warn(`Categoría desconocida: ${categoria}`);
+          continue;
+      }
+
+      destinatarios.push(...filtrados);
     }
 
-    destinatarios.push(...filtrados);
-  }
-
-  // Eliminar duplicados por id
-  const destinatariosUnicos = destinatarios.filter(
-    (m, index, self) => index === self.findIndex(u => u.id === m.id)
-  );
-
-  // Guardar un mensaje por cada destinatario
-  for (const miembro of destinatariosUnicos) {
-    await this.guardarMensaje(
-      miembro.telefono,
-      mensajeDto.contenido,
-      'sistema'
+    // Eliminar duplicados por id
+    const destinatariosUnicos = destinatarios.filter(
+      (m, index, self) => index === self.findIndex((u) => u.id === m.id),
     );
+
+    // Guardar un mensaje por cada destinatario
+    for (const miembro of destinatariosUnicos) {
+      if (!miembro.telefono.startsWith('57')) {
+        miembro.telefono = '57' + miembro.telefono;
+      }
+      await this.guardarMensaje(
+        miembro.telefono,
+        mensajeDto.contenido,
+        'sistema',
+      );
+    }
+
+    return { total: destinatariosUnicos.length };
   }
-
-  return { total: destinatariosUnicos.length };
-}
-
 
   async obtenerMensajes() {
     return this.mensasRepository.find();

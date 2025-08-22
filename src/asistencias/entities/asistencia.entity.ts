@@ -36,6 +36,7 @@ export class Asistencia {
 
   @Column({nullable: true, type: 'float', default: null})
   distancia: number;
+  
   @Column({ type: 'enum', enum: Categoria, default: Categoria.Adultos })
   categoria: string;
 

@@ -23,6 +23,9 @@ export class CasaDeFeDTO {
   direccion: string;
 
   @Expose()
+  barrio: string;
+
+  @Expose()
   @Type(() => MiembroDTO)
   encargadosId: MiembroDTO[];
 
