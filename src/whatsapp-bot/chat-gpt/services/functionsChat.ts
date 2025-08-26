@@ -2,6 +2,64 @@ export const ChatMessageParam = [
   {
     type: 'function',
     function: {
+      name: 'obtener_asistencias_por_mes',
+      description:
+        'Devuelve el número de asistencias de personas a la iglesia ordenado por mes.',
+      parameters: {
+        type: 'object',
+        properties: {
+          telefono: {
+            type: 'string',
+            description:
+              'Número de WhatsApp de la persona que solicita la petición.',
+          },
+        },
+        required: ['telefono'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'obtener_peticiones_por_mes',
+      description:
+        'Devuelve el número de peticiones de oración por mes.',
+      parameters: {
+        type: 'object',
+        properties: {
+          telefono: {
+            type: 'string',
+            description:
+              'Número de WhatsApp de la persona que solicita la petición.',
+          },
+        },
+        required: ['telefono'],
+      },
+    },
+  },
+
+  {
+    type: 'function',
+    function: {
+      name: 'obtener_peticiones_pendientes',
+      description:
+        'Devuelve las peticiones de oración pendientes.',
+      parameters: {
+        type: 'object',
+        properties: {
+          telefono: {
+            type: 'string',
+            description:
+              'Número de WhatsApp de la persona que solicita la petición.',
+          },
+        },
+        required: ['telefono'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'guardar_peticion_de_oracion',
       description:
         'Guarda la peticion de oracion de las personas en la base de datos',

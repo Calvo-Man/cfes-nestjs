@@ -42,7 +42,7 @@ export class ControlToolService {
       const miembros = await this.miembrosService.findAll();
       if (!miembros || miembros.miembros.length === 0) return;
       for (const miembro of miembros.miembros) {
-        if (miembro.telefono === '573024064896') {
+        if (miembro.telefono === '573024064896' || miembro.rol === 'pastor' || miembro.cargo === 'Intersección') {
           await this.manejoDeMensajesService.guardarMensaje(
             miembro.telefono,
             redaccion,
@@ -61,10 +61,57 @@ export class ControlToolService {
       };
     }
   }
+  async obtenerPeticonesPendientes(telefono: string): Promise<any> {
+    const miembro = await this.miembrosService.findOneByTelefono(telefono);
+    if (!miembro)
+      return {
+        audioPath: '',
+        text: 'Esta información es exclusivamente para miembros.',
+      };
+    const peticiones = await this.peticionesService.obtenerPendientes();
+    return {
+      audioPath: '',
+      text: peticiones
+        .map(
+          (p) =>
+            `*Nombre:* ${p.nombre}\n*Telefono:* ${p.telefono}\n*Categoria:* ${p.categoria}\n*Contenido:* ${p.contenido}\n`,
+        )
+        .join('\n'),
+    };
+  }
+async obtenerPeticionesPorMes(telefono: string): Promise<any> {
+  const miembro = await this.miembrosService.findOneByTelefono(telefono);
+  if (!miembro)
+    return {
+      audioPath: '',
+      text: 'Esta información es exclusivamente para miembros.',
+    };
+  const peticiones = await this.peticionesService.countPeticionesPorMeses();
+  return {
+    audioPath: '',
+    text: peticiones
+      .map((p) => `Fecha: *${p.mes}-${p.anio}* - Peticiones: ${p.total}`)
+      .join('\n'),
+  };
+}
+  async countAsistencias(telefono: string): Promise<any> {
+    const miembro = await this.miembrosService.findOneByTelefono(telefono);
+    if (!miembro)
+      return {
+        audioPath: '',
+        text: 'Esta información es exclusivamente para miembros.',
+      };
+    const asistencias =
+      await this.asistenciasService.countAsistenciasPorMeses();
+    return {
+      audioPath: '',
+      text: asistencias
+        .map((a) => `Fecha: *${a.mes}-${a.anio}* - Asistencias: ${a.total}`)
+        .join('\n'),
+    };
+  }
 
-  async buscarRespuestaTeologica(
-    preguntas: string | string[],
-  ): Promise<any> {
+  async buscarRespuestaTeologica(preguntas: string | string[]): Promise<any> {
     // Convertir a array si es un string
     const listaPreguntas = Array.isArray(preguntas) ? preguntas : [preguntas];
 
@@ -132,10 +179,7 @@ export class ControlToolService {
         \nDias en el mes que se hace aseo: Domingos y Jueves.`,
     };
   }
- async cambiarModoRespuesta(
-    telefono: string,
-    modo: string,
-  ): Promise<any> {
+  async cambiarModoRespuesta(telefono: string, modo: string): Promise<any> {
     try {
       const respuesta = await this.miembrosService.cambiarModoRespuesta(
         telefono,
@@ -154,12 +198,12 @@ export class ControlToolService {
       };
     }
   }
-   async obtenerModoRespuesta(telefono: string): Promise<string> {
+  async obtenerModoRespuesta(telefono: string): Promise<string> {
     const modo = await this.miembrosService.obtenerModoRespuesta(telefono);
     return modo || 'texto';
   }
 
-   async consultarDiasDeAseo(telefono: string): Promise<any> {
+  async consultarDiasDeAseo(telefono: string): Promise<any> {
     if (!telefono.startsWith('57')) {
       telefono = '57' + telefono;
     }
@@ -188,7 +232,7 @@ export class ControlToolService {
     };
   }
 
-   async consultarDiaAseoMesSiguiente(telefono: string): Promise<any> {
+  async consultarDiaAseoMesSiguiente(telefono: string): Promise<any> {
     if (!telefono.startsWith('57')) {
       telefono = '57' + telefono;
     }
@@ -217,9 +261,7 @@ export class ControlToolService {
       text: `Te corresponde hacer aseo los días: ${fechas}. ¡Gracias por tu servicio! 🙌`,
     };
   }
-   async consultarEncargadosAseosPorFechas(
-    fechas: string[],
-  ): Promise<any> {
+  async consultarEncargadosAseosPorFechas(fechas: string[]): Promise<any> {
     const encargados =
       await this.aseoService.buscarEncargadosdeAseoPorFechas(fechas);
     console.log(encargados);
@@ -235,7 +277,7 @@ export class ControlToolService {
         ${encargados.map((e) => `fecha: ${e.fecha} - nombre: ${e.nombre} - apellido: ${e.apellido} - telefono: ${e.telefono}`).join('\n')}`,
     };
   }
-   async consultarActividadesMes(mes: string): Promise<any> {
+  async consultarActividadesMes(mes: string): Promise<any> {
     const actividades = await this.actividadesService.findAllAgrupadoPorMes();
     console.log(actividades);
 
@@ -258,7 +300,7 @@ export class ControlToolService {
     };
   }
 
-   async consultarCasasDeFe(): Promise<any> {
+  async consultarCasasDeFe(): Promise<any> {
     const casas = await this.casasDeFeService.findAll();
     if (!casas.length)
       return {
@@ -278,7 +320,7 @@ export class ControlToolService {
           .join('\n'),
     };
   }
-   async textToSpeech(text: string, filename: string): Promise<any> {
+  async textToSpeech(text: string, filename: string): Promise<any> {
     const ruta = await this.textToSpeechService.convertirTextoAAudio(
       text,
       filename,
@@ -300,7 +342,7 @@ export class ControlToolService {
   `,
     };
   }
-   async sobreTusCapacidades() {
+  async sobreTusCapacidades() {
     return {
       audioPath: '',
       text: `

@@ -55,19 +55,28 @@ export class AsistenciasNotificacionService {
         this.logger.debug(`Procesando ${usuario.nombre}`);
         await this.asistenciasService.MensajeEnviado(usuario.id);
 
-        // const coords = await this.geocodingService.obtenerCoordenadas(usuario.direccion);
-        // this.logger.debug('Coordenadas obtenidas', coords);
-
         // Filtrar casas por categoría compatible
-        const casasCompatibles = casas.filter((casa) =>
+        let casasCompatibles = casas.filter((casa) =>
           casa.categoria.includes(usuario.categoria),
         );
 
         if (casasCompatibles.length === 0) {
           this.logger.warn(
-            `❌ No se encontró casa compatible para ${usuario.nombre} (${usuario.categoria})`,
+            `❌ No se encontró casa compatible para ${usuario.nombre} (${usuario.categoria}). Se asignará casa por defecto (adulto).`,
           );
-          continue;
+
+          // Buscar casas con categoría adulto
+          casasCompatibles = casas.filter((casa) =>
+            casa.categoria.toLowerCase().includes('Adultos'),
+          );
+
+          // Si aún así no hay casas, omitir
+          if (casasCompatibles.length === 0) {
+            this.logger.error(
+              `⚠️ No existe ninguna casa de fe con categoría "adulto". No se pudo asignar ${usuario.nombre}.`,
+            );
+            continue;
+          }
         }
 
         let casaMasCercana: CasasDeFe | null = null;

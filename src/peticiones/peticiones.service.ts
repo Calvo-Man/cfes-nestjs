@@ -44,6 +44,12 @@ export class PeticionesService {
       order: { fecha: 'DESC' },
     });
   }
+  async obtenerPendientes(): Promise<Peticion[]> {
+    return await this.peticionesRepository.find({
+      where: { estado: 'pendiente' },
+      order: { fecha: 'DESC' },
+    });
+  }
 
   async obtenerUna(id: number): Promise<Peticion> {
     const peticion = await this.peticionesRepository.findOneBy({ id });

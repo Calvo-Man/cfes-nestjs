@@ -41,6 +41,9 @@ export class Asistencia {
   categoria: string;
 
   @Column({ default: false })
+  recurrente: boolean;
+
+  @Column({ default: false })
   mensaje_enviado: boolean;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })

@@ -41,7 +41,7 @@ export class ManejoDeMensajesService {
     for (const categoria of mensajeDto.enviado_a.map((m) => m.toLowerCase())) {
       let filtrados: any[] = [];
 
-      switch (categoria) {
+      switch (categoria.toLocaleLowerCase()) {
         case 'pastores':
           filtrados = miembros.filter((m) => m.rol === 'pastor');
           break;
@@ -56,6 +56,15 @@ export class ManejoDeMensajesService {
           break;
         case 'asistentes':
           filtrados = asistentes;
+          break;
+        case 'jovenes':
+          filtrados = asistentes.filter((m) => m.categoria === 'Jovenes');
+          break;
+        case 'mujeres':
+          filtrados = asistentes.filter((m) => m.categoria === 'Mujeres');
+          break;
+        case 'hombres':
+          filtrados = asistentes.filter((m) => m.categoria === 'Hombres');
           break;
         default:
           console.warn(`Categoría desconocida: ${categoria}`);

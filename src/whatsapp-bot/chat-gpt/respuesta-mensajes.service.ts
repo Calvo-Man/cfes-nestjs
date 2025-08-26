@@ -1,10 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { OpenAI } from 'openai';
 import { MiembrosService } from 'src/miembros/miembros.service';
-import { TTSService } from '../text-to-voice.service';
 import systemPromptFunction from './system-prompt';
 import { ChatMessageParam } from './services/functionsChat';
-import { Horario } from 'src/miembros/enum/horario.enum';
 import { ManejoDeMensajesService } from 'src/manejo-de-mensajes/manejo-de-mensajes.service';
 import { Cron, CronExpression, Interval } from '@nestjs/schedule';
 import TriviaTemas from './services/triviaTemas';
@@ -24,8 +22,6 @@ export class ChatGptRespuestasService {
 
   constructor(
     private miembrosService: MiembrosService,
-    private textToSpeechService: TTSService,
-
     private manejoDeMensajesService: ManejoDeMensajesService,
     private asistenciasService: AsistenciasService,
     private readonly moderationService: ModerationService,
@@ -42,7 +38,7 @@ export class ChatGptRespuestasService {
             content: systemPromptFunction(
               new Date(),
               telefono,
-              await this.obtenerModoRespuesta(telefono),
+              await this.controlToolService.obtenerModoRespuesta(telefono),
             ),
           },
         ];
@@ -57,7 +53,7 @@ export class ChatGptRespuestasService {
         this.historiales[telefono][0].content = systemPromptFunction(
           new Date(),
           telefono,
-          await this.obtenerModoRespuesta(telefono),
+          await this.controlToolService.obtenerModoRespuesta(telefono),
           moderacion,
         );
       }
@@ -72,25 +68,22 @@ export class ChatGptRespuestasService {
         this.historiales[telefono] = [systemPrompt, ...resto]; // reconstruir historial
       }
 
-      // 🔹 Tools disponibles
+      // Tools disponibles
       const tools: OpenAI.Chat.ChatCompletionTool[] =
         ChatMessageParam as OpenAI.Chat.ChatCompletionTool[];
       console.log('tools:', tools);
-      // 🔹 Primera llamada al modelo
+      // Primera llamada al modelo
       const chat = await this.openai.chat.completions.create({
         model: 'gpt-5-mini',
         messages: this.historiales[telefono],
         tools,
         tool_choice: 'auto',
       });
-
       const choice = chat.choices[0].message;
       const toolCalls = choice.tool_calls ?? [];
-
-      // 🔹 Guardamos la respuesta del modelo (con tool_calls) ANTES de ejecutar nada
+      //  Guardar la respuesta del modelo (con tool_calls) ANTES de ejecutar nada
       this.historiales[telefono].push(choice);
-
-      // 🔹 Si hay tools que ejecutar
+      //  Si hay tools que ejecutar
       if (
         toolCalls.length > 0 &&
         chat.choices[0].finish_reason === 'tool_calls'
@@ -109,57 +102,86 @@ export class ChatGptRespuestasService {
           // 🔹 Ejecuta la tool correspondiente
           try {
             switch (toolCall.function.name) {
-              case 'guardar_peticion_de_oracion':
-                resultado = await this.guardarPeticionPorAgenteIA(
-                  args.contenido,
-                  args.categoria,
-                  args.nombre,
+              case 'obtener_asistencias_por_mes':
+                resultado = await this.controlToolService.countAsistencias(
                   args.telefono,
-                  args.redaccion,
                 );
+                break;
+              case 'obtener_peticiones_pendientes':
+                resultado =
+                  await this.controlToolService.obtenerPeticonesPendientes(args.telefono);
+                break;
+              case 'obtener_peticiones_por_mes':
+                resultado =
+                  await this.controlToolService.obtenerPeticionesPorMes(
+                    args.telefono,
+                  );
+                break;
+              case 'guardar_peticion_de_oracion':
+                resultado =
+                  await this.controlToolService.guardarPeticionPorAgenteIA(
+                    args.contenido,
+                    args.categoria,
+                    args.nombre,
+                    args.telefono,
+                    args.redaccion,
+                  );
                 break;
               case 'consultar_dias_aseo_mes_actual':
-                resultado = await this.consultarDiasDeAseo(args.telefono);
-                break;
-              case 'consultar_dias_aseo_mes_siguiente':
-                resultado = await this.consultarDiaAseoMesSiguiente(
+                resultado = await this.controlToolService.consultarDiasDeAseo(
                   args.telefono,
                 );
                 break;
+              case 'consultar_dias_aseo_mes_siguiente':
+                resultado =
+                  await this.controlToolService.consultarDiaAseoMesSiguiente(
+                    args.telefono,
+                  );
+                break;
               case 'consultar_encargados_aseos_por_fechas':
-                resultado = await this.consultarEncargadosAseosPorFechas(
-                  args.fechas,
-                );
+                resultado =
+                  await this.controlToolService.consultarEncargadosAseosPorFechas(
+                    args.fechas,
+                  );
                 break;
               case 'consultar_casas_fe':
-                resultado = await this.consultarCasasDeFe();
+                resultado = await this.controlToolService.consultarCasasDeFe();
                 break;
               case 'consultar_actividades_por_mes':
-                resultado = await this.consultarActividadesMes(args.mes);
+                resultado =
+                  await this.controlToolService.consultarActividadesMes(
+                    args.mes,
+                  );
                 break;
               case 'consultar_datos_miembro':
-                resultado = await this.consultarMiembro(args.telefono);
+                resultado = await this.controlToolService.consultarMiembro(
+                  args.telefono,
+                );
                 break;
               case 'sobre_tu_creacion':
-                resultado = await this.sobreTuCreacion();
+                resultado = await this.controlToolService.sobreTuCreacion();
                 break;
               case 'buscarRespuestaTeologica':
-                resultado = await this.buscarRespuestaTeologica(args.preguntas);
+                resultado =
+                  await this.controlToolService.buscarRespuestaTeologica(
+                    args.preguntas,
+                  );
                 break;
               case 'cambiar_modo_respuesta':
-                resultado = await this.cambiarModoRespuesta(
+                resultado = await this.controlToolService.cambiarModoRespuesta(
                   args.telefono,
                   args.modo,
                 );
                 break;
               case 'cambiar_dia_de_aseo_preferido':
-                resultado = await this.cambiarDiaPreferidoDeAseo(
-                  args.telefono,
-                  args.horario,
-                );
+                resultado =
+                  await this.controlToolService.cambiarDiaPreferidoDeAseo(
+                    args.telefono,
+                    args.horario,
+                  );
                 break;
               case 'sobre_tus_capacidades':
-                resultado = await this.sobreTusCapacidades();
+                resultado = await this.controlToolService.sobreTusCapacidades();
                 break;
               default:
                 resultado = {
@@ -196,7 +218,7 @@ export class ChatGptRespuestasService {
             this.historiales[telefono][0].content = systemPromptFunction(
               new Date(),
               telefono,
-              await this.obtenerModoRespuesta(telefono),
+              await this.controlToolService.obtenerModoRespuesta(telefono),
             );
           }
         }
@@ -215,9 +237,12 @@ export class ChatGptRespuestasService {
         });
 
         // 🔹 Convertir a audio si corresponde
-        if ((await this.obtenerModoRespuesta(telefono)) === 'voz') {
+        if (
+          (await this.controlToolService.obtenerModoRespuesta(telefono)) ===
+          'voz'
+        ) {
           const nombreFileName = `${telefono}_${Date.now()}`;
-          const rutaAudio = await this.textToSpeech(
+          const rutaAudio = await this.controlToolService.textToSpeech(
             respuestaFinal,
             nombreFileName,
           );
@@ -234,9 +259,11 @@ export class ChatGptRespuestasService {
         content: respuestaNormal,
       });
 
-      if ((await this.obtenerModoRespuesta(telefono)) === 'voz') {
+      if (
+        (await this.controlToolService.obtenerModoRespuesta(telefono)) === 'voz'
+      ) {
         const nombreFileName = `${telefono}_${Date.now()}`;
-        const rutaAudio = await this.textToSpeech(
+        const rutaAudio = await this.controlToolService.textToSpeech(
           respuestaNormal,
           nombreFileName,
         );
@@ -361,78 +388,5 @@ Descipcion del tema: ${temaElegido.descripcion}
         );
       }
     }
-  }
-
-  async guardarPeticionPorAgenteIA(
-    contenido: string,
-    categoria: string,
-    nombre: string,
-    telefono: string,
-    redaccion: string,
-  ): Promise<any> {
-    return await this.controlToolService.guardarPeticionPorAgenteIA(
-      contenido,
-      categoria,
-      nombre,
-      telefono,
-      redaccion,
-    );
-  }
-
-  private async buscarRespuestaTeologica(
-    preguntas: string | string[],
-  ): Promise<any> {
-    return this.controlToolService.buscarRespuestaTeologica(preguntas);
-  }
-
-  private async cambiarDiaPreferidoDeAseo(
-    telefono: string,
-    horario: Horario,
-  ): Promise<any> {
-    return this.controlToolService.cambiarDiaPreferidoDeAseo(telefono, horario);
-  }
-
-  private async consultarMiembro(telefono: string): Promise<any> {
-    return this.controlToolService.consultarMiembro(telefono);
-  }
-  private async cambiarModoRespuesta(
-    telefono: string,
-    modo: string,
-  ): Promise<any> {
-    return this.controlToolService.cambiarModoRespuesta(telefono, modo);
-  }
-  private async obtenerModoRespuesta(telefono: string): Promise<string> {
-    const modo = await this.miembrosService.obtenerModoRespuesta(telefono);
-    return modo || 'texto';
-  }
-
-  private async consultarDiasDeAseo(telefono: string): Promise<any> {
-    return this.controlToolService.consultarDiasDeAseo(telefono);
-  }
-
-  private async consultarDiaAseoMesSiguiente(telefono: string): Promise<any> {
-    return this.controlToolService.consultarDiaAseoMesSiguiente(telefono);
-  }
-  private async consultarEncargadosAseosPorFechas(
-    fechas: string[],
-  ): Promise<any> {
-    return this.controlToolService.consultarEncargadosAseosPorFechas(fechas);
-  }
-  private async consultarActividadesMes(mes: string): Promise<any> {
-    return this.controlToolService.consultarActividadesMes(mes);
-  }
-
-  private async consultarCasasDeFe(): Promise<any> {
-    return this.controlToolService.consultarCasasDeFe();
-  }
-  private async textToSpeech(text: string, filename: string): Promise<any> {
-    return this.textToSpeechService.convertirTextoAAudio(text, filename);
-  }
-
-  private async sobreTuCreacion() {
-    return await this.controlToolService.sobreTuCreacion();
-  }
-  private async sobreTusCapacidades() {
-    return await this.controlToolService.sobreTusCapacidades();
   }
 }

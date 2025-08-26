@@ -175,6 +175,7 @@ A partir de ahora recibirás por este medio notificaciones importantes como asig
         apellido: miembro.apellido,
         telefono: miembro.telefono,
         rol: miembro.rol,
+        cargo: miembro.cargo,
         disponibilidad_aseo: miembro.disponibilidad_aseo,
         horario_aseo: miembro.horario_aseo,
       })),
