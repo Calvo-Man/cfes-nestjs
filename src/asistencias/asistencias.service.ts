@@ -4,6 +4,7 @@ import {
   forwardRef,
   Inject,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -74,6 +75,26 @@ Esperamos verte de nuevo. Bendiciones 🙏
 
   async findAll() {
     const asistencias = await this.asistenciaRepository.find({
+      order: { id: 'DESC' }, // o 'DESC' si quieres los más recientes primero
+    });
+    if (!asistencias) {
+      throw new NotFoundException('Asistencias no encontradas');
+    }
+    return asistencias;
+  }
+  async findRecurrentes() {
+    const asistencias = await this.asistenciaRepository.find({
+      where: { recurrente: true },
+      order: { id: 'DESC' }, // o 'DESC' si quieres los más recientes primero
+    });
+    if (!asistencias) {
+      throw new NotFoundException('Asistencias no encontradas');
+    }
+    return asistencias;
+  }
+  async findNoRecurrentes() {
+    const asistencias = await this.asistenciaRepository.find({
+      where: { recurrente: false },
       order: { id: 'DESC' }, // o 'DESC' si quieres los más recientes primero
     });
     if (!asistencias) {
@@ -177,6 +198,25 @@ Esperamos verte de nuevo. Bendiciones 🙏
       throw new NotFoundException('Asistencia no encontrada');
     }
     return await this.asistenciaRepository.update(id, updateAsistenciaDto);
+  }
+  async setRecurrente(id: number) {
+    try {
+    const asistencia = await this.asistenciaRepository.findOne({
+      where: { id },
+    });
+    if (!asistencia) {
+      throw new NotFoundException('Asistencia no encontrada');
+    }
+    asistencia.recurrente = !asistencia.recurrente;
+    await this.asistenciaRepository.save(asistencia);
+    return {
+      id: asistencia.id,
+      message: `Asistencia actualizada a ${asistencia.recurrente ? 'recurrente' : 'no recurrente'}`,
+      color: asistencia.recurrente ? 'success' : 'error',
+    }
+    } catch (error) {
+      throw new InternalServerErrorException('Error al actualizar la asistencia');
+    }
   }
   async asignarCasaDeFe(id: number, casaDeFe: CasasDeFe) {
     const asistencia = await this.asistenciaRepository.findOne({

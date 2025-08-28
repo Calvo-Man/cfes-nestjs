@@ -37,6 +37,14 @@ export class AsistenciasController {
   countAllPerMonth() {
     return this.asistenciasService.countAsistenciasPorMeses();
   }
+  @Get('findRecurrentes')
+  async findRecurrentes() {
+    return await this.asistenciasService.findRecurrentes();
+  }
+  @Get('findNoRecurrentes')
+  async findNoRecurrentes() {
+    return await this.asistenciasService.findNoRecurrentes();
+  }
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.asistenciasService.findOneById(+id);
@@ -49,9 +57,14 @@ export class AsistenciasController {
   ) {
     return this.asistenciasService.update(+id, updateAsistenciaDto);
   }
+  @Patch('setRecurrente/:id')
+  @Roles(Rol.ADMINISTRADOR, Rol.LIDER, Rol.PASTOR)
+  setRecurrente(@Param('id') id: string, ) {
+    return this.asistenciasService.setRecurrente(+id, );
+  }
   
   @Delete(':id')
-  @Roles(Rol.ADMINISTRADOR, Rol.LIDER) // Asegúrate de que el rol 'administrador' esté definido en tu enum de roles
+  @Roles(Rol.ADMINISTRADOR, Rol.LIDER, Rol.PASTOR) // Asegúrate de que el rol 'administrador' esté definido en tu enum de roles
   remove(@Param('id') id: string) {
     return this.asistenciasService.remove(+id);
   }
