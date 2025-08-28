@@ -132,7 +132,7 @@ CFES: "Ese tema está fuera de mi área, pero puedo ayudarte con preguntas sobre
   4. Después de cada respuesta del usuario:
     - Explica de forma clara y breve *por qué* la respuesta correcta es la correcta, con cita bíblica si es posible y continúa con la siguiente pregunta.
   5. Si el usuario no sabe la respuesta, igual explícasela antes de avanzar.
-  6. Serán 10 preguntas en total por trivia.
+  6. Serán 5 preguntas en total por trivia.
   7. Al final de la trivia, felicita al usuario, dile cuántas preguntas acertó y anímalo a seguir aprendiendo.
   8. No repitas preguntas en la misma trivia.
 
@@ -154,7 +154,7 @@ CFES: "Ese tema está fuera de mi área, pero puedo ayudarte con preguntas sobre
   *(Continúa enseguida con la Pregunta 2)*
 
 ℹ *Datos del contexto*
-- Teléfono de usuario que esta escribiendo: ${telefono.split('57')[1]}
+- Teléfono de usuario que esta escribiendo: ${telefono.split('57')[1] || telefono}
 - Fecha actual: ${diaActual.toDateString()}
 - Modo de respuesta: ${esVoz ? 'Voz' : 'Texto'}
 - Iglesia: Centro de Fe y Esperanza San Pelayo, carrera 7 calle 12, San Pelayo, Córdoba.

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable } from '@nestjs/common';
 import { CreateMiembroDto } from './dto/create-miembro.dto';
 import { UpdateMiembroDto } from './dto/update-miembro.dto';
 import { Between, In, IsNull, Repository } from 'typeorm';
@@ -97,7 +97,7 @@ A partir de ahora recibirás por este medio notificaciones importantes como asig
       );
       await this.manejoDeMensajesService.guardarMensaje(
         chatId,
-        '¿Cuáles son tus capacidades?',
+        `Explicale al miembro con usuario ${savedMiembro.user} cuales son tus funciones y capacidades.`,
         'IA',
       );
     } catch (error) {
@@ -259,7 +259,20 @@ A partir de ahora recibirás por este medio notificaciones importantes como asig
     const miembro = await this.miembroRepository.findOne({
       where: { telefono: telefono.trim() },
     });
-    return miembro;
+    if (!miembro) {
+      throw new BadRequestException('Miembro no encontrado');
+    }
+    return {
+      id: miembro.id,
+      name: miembro.name,
+      apellido: miembro.apellido,
+      telefono: miembro.telefono,
+      rol: miembro.rol,
+      cargo: miembro.cargo,
+      disponibilidad_aseo: miembro.disponibilidad_aseo,
+      horario_aseo: miembro.horario_aseo,
+      modo_respuesta: miembro.modo_respuesta,
+    };
   }
   async countMiembros() {
     const count = await this.miembroRepository.count({
@@ -318,6 +331,24 @@ A partir de ahora recibirás por este medio notificaciones importantes como asig
   }
   async updateHorarioAseoIA(id: number, horario_aseo: Horario) {
     const miembro = await this.miembroRepository.findOne({ where: { id } });
+
+    if (!miembro) {
+      throw new BadRequestException('Miembro no encontrado');
+    }
+
+    try {
+      miembro.horario_aseo = horario_aseo;
+      await this.miembroRepository.save(miembro);
+
+      return 'Dia de aseo preferido actualizado con exito';
+    } catch (error) {
+      throw new BadRequestException(
+        `Error al actualizar miembro: ${error.message}`,
+      );
+    }
+  }
+   async updateHorarioAseoIATelefono(telefono: string, horario_aseo: Horario) {
+    const miembro = await this.findOneByTelefono(telefono);
 
     if (!miembro) {
       throw new BadRequestException('Miembro no encontrado');

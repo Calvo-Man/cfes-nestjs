@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import {  Module } from '@nestjs/common';
 import { ChatGptRespuestasService } from './respuesta-mensajes.service';
 import { AseosModule } from 'src/aseos/aseos.module';
 import { EventosModule } from 'src/eventos/eventos.module';
@@ -16,6 +16,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Bloqueo } from './entities/bloqueos.entity';
 import { PeticionesModule } from 'src/peticiones/peticiones.module';
 import { ControlToolService } from './services/ControlTool.service';
+import { ControllerToolService } from './controllers/mcp.controller';
+import { ChatGptMcpRespuestasService } from './chat-gpt-respuestas.service';
+import { SystemMessagesService } from './services/SystemMessages.service';
 
 @Module({
   imports: [
@@ -31,14 +34,17 @@ import { ControlToolService } from './services/ControlTool.service';
   providers: [
     WhatsappBotService,
     ChatGptRespuestasService,
+    SystemMessagesService,
+    ChatGptMcpRespuestasService,
     TranscripcionService,
     ModerationService,
     TTSService,
     TeologiaService,
     JwtService,
-    ControlToolService
+    ControlToolService,
+    ControllerToolService
 
   ],
-  exports: [ChatGptRespuestasService],
+  exports: [ChatGptRespuestasService, ChatGptMcpRespuestasService,SystemMessagesService],
 })
 export class ChatGptRespuestasModule {}

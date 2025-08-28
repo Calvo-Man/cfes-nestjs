@@ -57,6 +57,22 @@ export class EventosService {
 
     return agrupados;
   }
+ async findEventosByMonth(month: number, year: number) {
+  const inicioMes = new Date(year, month - 1, 1); // primer día del mes
+  const finMes = new Date(year, month, 0, 23, 59, 59); // último día del mes
+
+  const eventos = await this.eventosRepository.find({
+    where: {
+      date: Between(inicioMes, finMes),
+    },
+  });
+
+  if (!eventos || eventos.length === 0) {
+    throw new NotFoundException('Eventos no encontrados');
+  }
+
+  return eventos;
+}
 
   async findOne(id: number) {
     const evento = await this.eventosRepository.findOneBy({ id });

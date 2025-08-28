@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { AseosService } from 'src/aseos/aseos.service';
 import { CasasDeFeService } from 'src/casas-de-fe/casas-de-fe.service';
 import { EventosService } from 'src/eventos/eventos.service';
@@ -14,12 +14,14 @@ import { Horario } from 'src/miembros/enum/horario.enum';
 @Injectable()
 export class ControlToolService {
   constructor(
+    @Inject(forwardRef(() => MiembrosService))
     private miembrosService: MiembrosService,
     private textToSpeechService: TTSService,
     private aseoService: AseosService,
     private casasDeFeService: CasasDeFeService,
     private actividadesService: EventosService,
     private teologiaService: TeologiaService,
+    @Inject(forwardRef(() => ManejoDeMensajesService))
     private manejoDeMensajesService: ManejoDeMensajesService,
     private asistenciasService: AsistenciasService,
     private readonly peticionesService: PeticionesService,

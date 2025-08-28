@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { OpenAI } from 'openai';
 import { MiembrosService } from 'src/miembros/miembros.service';
 import systemPromptFunction from './system-prompt';
@@ -9,6 +9,7 @@ import TriviaTemas from './services/triviaTemas';
 import { AsistenciasService } from 'src/asistencias/asistencias.service';
 import { ModerationService } from './services/moderation.service';
 import { ControlToolService } from './services/ControlTool.service';
+import { In } from 'typeorm';
 
 @Injectable()
 export class ChatGptRespuestasService {
@@ -21,6 +22,7 @@ export class ChatGptRespuestasService {
   > = {};
 
   constructor(
+    @Inject(forwardRef(() => MiembrosService))
     private miembrosService: MiembrosService,
     private manejoDeMensajesService: ManejoDeMensajesService,
     private asistenciasService: AsistenciasService,
@@ -71,7 +73,6 @@ export class ChatGptRespuestasService {
       // Tools disponibles
       const tools: OpenAI.Chat.ChatCompletionTool[] =
         ChatMessageParam as OpenAI.Chat.ChatCompletionTool[];
-      console.log('tools:', tools);
       // Primera llamada al modelo
       const chat = await this.openai.chat.completions.create({
         model: 'gpt-5-mini',

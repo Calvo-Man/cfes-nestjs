@@ -65,7 +65,6 @@ import { PeticionesModule } from './peticiones/peticiones.module';
     ContratosModule,
     ChatGptRespuestasModule,
     PeticionesModule
-    
   ],
   controllers: [AppController],
   providers: [AppService],

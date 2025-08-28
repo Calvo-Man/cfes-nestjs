@@ -43,10 +43,10 @@ export class AsistenciasService {
 
     await this.asistenciaRepository.save(nuevaAsistencia);
     const mensaje = `
-Hola ${createAsistenciaDto.nombre} 👋  
-¡Qué alegría tenerte hoy en la iglesia! 🙌✨   
-Esperamos verte de nuevo. Bendiciones 🙏
-`;
+Dale una calida bienvenida a esta persona que asiste por primera vez a la iglesia.
+Tambien invitala a asistir a una casa de fe (Sugiere la mas cerca a su ubicación usando coordenadas y no le digas sus coordenadas porque es privada).
+(Consulta sus datos con el ID: ${nuevaAsistencia.id} en asistencias).`;
+
 
     const telefono = createAsistenciaDto.telefono.startsWith('57')
       ? createAsistenciaDto.telefono
@@ -54,7 +54,7 @@ Esperamos verte de nuevo. Bendiciones 🙏
     await this.manejoDeMensajesService.guardarMensaje(
       telefono,
       mensaje,
-      'asistencia',
+      'IA',
     );
     return {
       message: 'Asistencia creada exitosamente',

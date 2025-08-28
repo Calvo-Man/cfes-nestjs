@@ -7,7 +7,6 @@ import { Aseo } from './entities/aseo.entity';
 import { Miembro } from 'src/miembros/entities/miembro.entity';
 import { AseoGateway } from './aseo.gateway';
 import { JwtService } from '@nestjs/jwt';
-import { MiembrosModule } from 'src/miembros/miembros.module';
 import { ManejoDeMensajesModule } from 'src/manejo-de-mensajes/manejo-de-mensajes.module';
 import { MiembrosService } from 'src/miembros/miembros.service';
 import { ContratosModule } from 'src/contratos/contratos.module';

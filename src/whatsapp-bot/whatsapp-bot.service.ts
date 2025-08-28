@@ -13,6 +13,8 @@ import { TranscripcionService } from './voice-to-text.service';
 import { ManejoDeMensajesService } from 'src/manejo-de-mensajes/manejo-de-mensajes.service';
 import { MiembrosService } from 'src/miembros/miembros.service';
 import { PeticionesService } from 'src/peticiones/peticiones.service';
+import { ChatGptMcpRespuestasService } from './chat-gpt/chat-gpt-respuestas.service';
+import { SystemMessagesService } from './chat-gpt/services/SystemMessages.service';
 @Injectable()
 export class WhatsappBotService implements OnModuleInit {
   private client: Client;
@@ -24,9 +26,10 @@ export class WhatsappBotService implements OnModuleInit {
 
   constructor(
     public readonly manejoDeMensajesService: ManejoDeMensajesService,
-    private readonly respuestaMensajesService: ChatGptRespuestasService,
+    private readonly chatGptService: ChatGptMcpRespuestasService,
     private readonly transcripcionService: TranscripcionService,
     private readonly miembrosService: MiembrosService,
+    private readonly systemMessagesService: SystemMessagesService,
   ) {}
 
   onModuleInit() {
@@ -144,7 +147,7 @@ export class WhatsappBotService implements OnModuleInit {
           return;
         }
 
-        const respuesta = await this.respuestaMensajesService.responderPregunta(
+        const respuesta = await this.chatGptService.responderPregunta(
           transcripcion,
           telefono,
         );
@@ -168,7 +171,7 @@ export class WhatsappBotService implements OnModuleInit {
           await chat.sendStateRecording();
         }
 
-        const respuesta = await this.respuestaMensajesService.responderPregunta(
+        const respuesta = await this.chatGptService.responderPregunta(
           texto,
           telefono,
         );
@@ -242,7 +245,7 @@ export class WhatsappBotService implements OnModuleInit {
     }
   }
 
-  @Interval(60000)
+  @Interval(600000)
   async enviarMensajesPendientes() {
     if (this.enviandoMensajes) {
       this.logger.warn(
@@ -274,11 +277,10 @@ export class WhatsappBotService implements OnModuleInit {
                 : telefonoNumerico;
 
               const respuesta =
-                await this.respuestaMensajesService.responderPregunta(
-                  mensaje.contenido,
+                await this.systemMessagesService.recepcionarMensajesParaSistema(
                   telefonoSinPrefijo,
+                  mensaje.contenido,
                 );
-
               this.logger.debug(
                 `📧 Enviando a ${mensaje.telefono}: ${mensaje.contenido}`,
               );

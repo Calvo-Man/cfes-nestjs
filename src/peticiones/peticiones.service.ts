@@ -19,8 +19,9 @@ export class PeticionesService {
   async guardarPeticionPorAgenteIA(
     contenido: string,
     categoria: string,
+    telefono: string,
     nombre?: string,
-    telefono?: string,
+    redaccion?: string,
   ) {
     if (!contenido || contenido.trim().length === 0) {
       return 'El contenido de la petición no puede estar vacío';
@@ -31,6 +32,7 @@ export class PeticionesService {
         categoria,
         nombre: nombre || undefined,
         telefono: telefono || undefined,
+        redaccion,
         estado: 'pendiente',
       });
       return 'Petición guardada con éxito';

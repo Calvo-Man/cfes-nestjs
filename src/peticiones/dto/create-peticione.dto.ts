@@ -18,6 +18,10 @@ export class CreatePeticionDto {
   categoria?: string;
 
   @IsOptional()
+  @IsString()
+  redaccion?: string;
+
+  @IsOptional()
   @IsIn(['pendiente', 'en_oracion', 'respondida'])
   estado?: 'pendiente' | 'en_oracion' | 'respondida';
 }

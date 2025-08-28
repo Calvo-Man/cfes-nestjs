@@ -1,4 +1,4 @@
-import { forwardRef, Module } from '@nestjs/common';
+import {  Module } from '@nestjs/common';
 import { WhatsappBotService } from './whatsapp-bot.service';
 import { ManejoDeMensajesModule } from 'src/manejo-de-mensajes/manejo-de-mensajes.module';
 import { MiembrosModule } from 'src/miembros/miembros.module';
@@ -8,7 +8,7 @@ import { TeologiaService } from './chat-gpt/services/teologia.service';
 import { TeologiaController } from './chat-gpt/controllers/teologia.controller';
 import { JwtService } from '@nestjs/jwt';
 import { ChatGptRespuestasModule } from './chat-gpt/respuesta-mensajes.module';
-import { PeticionesModule } from 'src/peticiones/peticiones.module';
+
 
 @Module({
   imports: [
@@ -26,6 +26,6 @@ import { PeticionesModule } from 'src/peticiones/peticiones.module';
     TeologiaService,
     JwtService
   ],
-  exports: [WhatsappBotService,],
+  exports: [WhatsappBotService],
 })
 export class WhatsappBotModule {}
