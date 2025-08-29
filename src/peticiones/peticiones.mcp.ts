@@ -9,12 +9,29 @@ export const peticionesMcpTools = (peticionesService: PeticionesService) => [
     inputSchema: {
       type: 'object',
       properties: {
-        contenido: { type: 'string', description: 'Contenido de la petición' },
-        categoria: { type: 'string', description: 'Categoría de la petición (ej: salud, familia, trabajo)' },
-        nombre: { type: 'string', description: 'Nombre de la persona que realiza la petición' },
-        telefono: { type: 'string', description: 'Número de teléfono asociado a la petición' },
+        contenido: {
+          type: 'string',
+          description: 'Contenido original de la petición del usuario',
+        },
+        categoria: {
+          type: 'string',
+          description: 'Categoría de la petición (ej: salud, familia, trabajo)',
+        },
+        nombre: {
+          type: 'string',
+          description:
+            'Nombre de la persona que realiza la petición (Si no se conoce, puedes preguntar una sola vez o buscar en la base de datos con obtener_asistente_por_telefono (Cuando no es miembro registrado); si aun no lo da, usa "Anónimo")',
+        },
+        telefono: {
+          type: 'string',
+          description: 'Número de teléfono asociado a la petición',
+        },
+        redaccion: {
+          type: 'string',
+          description: 'Redacción de la petición para ser enviada por WhatsApp a los pastores o equipo de intercesión',
+        },
       },
-      required: ['contenido', 'categoria', 'nombre', 'telefono'],
+      required: ['contenido', 'categoria', 'nombre', 'telefono', 'redaccion'],
     },
     execute: async (args: any) => {
       return await peticionesService.crearPeticion({
@@ -67,19 +84,19 @@ export const peticionesMcpTools = (peticionesService: PeticionesService) => [
       return await peticionesService.obtenerUna(args.id);
     },
   },
-//   {
-//     name: 'actualizar_estado_peticion',
-//     description: 'Actualiza el estado de una petición (pendiente, atendida, rechazada)',
-//     inputSchema: {
-//       type: 'object',
-//       properties: {
-//         id: { type: 'string', description: 'ID de la petición' },
-//         estado: { type: 'string', description: 'Nuevo estado de la petición' },
-//       },
-//       required: ['id', 'estado'],
-//     },
-//     execute: async (args: any) => {
-//       return await peticionesService.marcarEnOracion(args.id, args.estado);
-//     },
-//   },
+  //   {
+  //     name: 'actualizar_estado_peticion',
+  //     description: 'Actualiza el estado de una petición (pendiente, atendida, rechazada)',
+  //     inputSchema: {
+  //       type: 'object',
+  //       properties: {
+  //         id: { type: 'string', description: 'ID de la petición' },
+  //         estado: { type: 'string', description: 'Nuevo estado de la petición' },
+  //       },
+  //       required: ['id', 'estado'],
+  //     },
+  //     execute: async (args: any) => {
+  //       return await peticionesService.marcarEnOracion(args.id, args.estado);
+  //     },
+  //   },
 ];

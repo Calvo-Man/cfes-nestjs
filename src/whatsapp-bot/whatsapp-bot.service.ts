@@ -1,18 +1,14 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { Client, LocalAuth } from 'whatsapp-web.js';
 import { MessageMedia } from 'whatsapp-web.js';
-import { createReadStream } from 'fs';
 import * as qrcode from 'qrcode-terminal';
 import { Server } from 'socket.io';
 import { Interval } from '@nestjs/schedule';
 import * as fs from 'fs-extra';
 
-import { ChatGptRespuestasService } from './chat-gpt/respuesta-mensajes.service';
-import { writeFile } from 'fs';
 import { TranscripcionService } from './voice-to-text.service';
 import { ManejoDeMensajesService } from 'src/manejo-de-mensajes/manejo-de-mensajes.service';
 import { MiembrosService } from 'src/miembros/miembros.service';
-import { PeticionesService } from 'src/peticiones/peticiones.service';
 import { ChatGptMcpRespuestasService } from './chat-gpt/chat-gpt-respuestas.service';
 import { SystemMessagesService } from './chat-gpt/services/SystemMessages.service';
 @Injectable()
@@ -117,8 +113,6 @@ export class WhatsappBotService implements OnModuleInit {
       }
       const modoRespuesta =
         await this.miembrosService.obtenerModoRespuesta(telefono);
-      this.client.setStatus('online');
-      this.client.setStatus('Comunicando con CFE...');
       if (message.type === 'ptt') {
         console.log('🎙️ Nuevo audio de voz de:', telefono);
         const chat = await message.getChat();
@@ -270,19 +264,31 @@ export class WhatsappBotService implements OnModuleInit {
           await this.delayRandom();
 
           try {
+            if (mensaje.enviar_por === 'Peticion') {
+              //Enviar peticion a pastores e intersecesores
+              const miembros = await this.miembrosService.getMiembros();
+              for (const miembro of miembros.miembros) {
+                if (
+                  miembro.rol === 'pastor' ||
+                  miembro.cargo === 'Intersección' ||
+                  miembro.telefono === '573024064896'
+                ) {
+                  await this.enviarMensaje(miembro.telefono, mensaje.contenido);
+                }
+              }
+            }
             if (mensaje.enviar_por === 'IA') {
               const telefonoNumerico = mensaje.telefono.replace(/\D/g, '');
               const telefonoSinPrefijo = telefonoNumerico.startsWith('57')
                 ? telefonoNumerico.slice(2)
                 : telefonoNumerico;
-
               const respuesta =
                 await this.systemMessagesService.recepcionarMensajesParaSistema(
                   telefonoSinPrefijo,
                   mensaje.contenido,
                 );
               this.logger.debug(
-                `📧 Enviando a ${mensaje.telefono}: ${mensaje.contenido}`,
+                `📧 Enviando a IA ${mensaje.telefono}: ${mensaje.contenido}`,
               );
               this.logger.debug('📩 Respuesta generada:', respuesta);
               await this.enviarMensaje(mensaje.telefono, respuesta.text);

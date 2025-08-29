@@ -112,7 +112,15 @@ Tambien invitala a asistir a una casa de fe (Sugiere la mas cerca a su ubicació
     }
     return asistencia;
   }
-
+async findOneByTelefono(telefono: string) {
+  const asistencia = await this.asistenciaRepository.findOne({
+    where: { telefono },
+  });
+  if (!asistencia) {
+    throw new NotFoundException('Asistencia no encontrada');
+  }
+  return asistencia;
+}
   async countAsistencias() {
     const count = await this.asistenciaRepository.count();
     return count;

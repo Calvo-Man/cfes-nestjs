@@ -4,12 +4,14 @@ import { Repository } from 'typeorm';
 import { Peticion } from './entities/peticione.entity';
 import { CreatePeticionDto } from './dto/create-peticione.dto';
 import { UpdatePeticionDto } from './dto/update-peticione.dto';
+import { ManejoDeMensajesService } from 'src/manejo-de-mensajes/manejo-de-mensajes.service';
 
 @Injectable()
 export class PeticionesService {
   constructor(
     @InjectRepository(Peticion)
     private readonly peticionesRepository: Repository<Peticion>,
+    private readonly manejoMensajesService: ManejoDeMensajesService,
   ) {}
 
   async crearPeticion(createPeticionDto: CreatePeticionDto): Promise<Peticion> {
@@ -20,8 +22,8 @@ export class PeticionesService {
     contenido: string,
     categoria: string,
     telefono: string,
+    redaccion: string,
     nombre?: string,
-    redaccion?: string,
   ) {
     if (!contenido || contenido.trim().length === 0) {
       return 'El contenido de la petición no puede estar vacío';
@@ -32,9 +34,9 @@ export class PeticionesService {
         categoria,
         nombre: nombre || undefined,
         telefono: telefono || undefined,
-        redaccion,
         estado: 'pendiente',
       });
+      await this.manejoMensajesService.guardarMensaje(telefono, redaccion, 'Peticion');
       return 'Petición guardada con éxito';
     } catch (error) {
       return `Error al guardar la petición: ${error.message}`;

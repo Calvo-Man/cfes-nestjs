@@ -33,6 +33,20 @@ export const asistenciasMcpTools = (asistenciasService: AsistenciasService) => [
     },
   },
   {
+    name: 'obtener_asistente_por_telefono',
+    description: 'Obtiene los datos de un asistente por teléfono',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        telefono: { type: 'string' },
+      },
+      required: ['telefono'],
+    },
+    execute: async (args: any) => {
+      return await asistenciasService.findOneByTelefono(args.telefono);
+    },
+  },
+  {
     name: 'contar_asistencias',
     description: 'Cuenta todas las asistencias registradas',
     inputSchema: { type: 'object', properties: {} },
