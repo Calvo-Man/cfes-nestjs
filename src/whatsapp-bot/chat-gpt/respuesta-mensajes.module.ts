@@ -1,5 +1,4 @@
 import {  Module } from '@nestjs/common';
-import { ChatGptRespuestasService } from './respuesta-mensajes.service';
 import { AseosModule } from 'src/aseos/aseos.module';
 import { EventosModule } from 'src/eventos/eventos.module';
 import { WhatsappBotService } from '../whatsapp-bot.service';
@@ -19,10 +18,12 @@ import { ControlToolService } from './services/ControlTool.service';
 import { ControllerToolService } from './controllers/mcp.controller';
 import { ChatGptMcpRespuestasService } from './chat-gpt-respuestas.service';
 import { SystemMessagesService } from './services/SystemMessages.service';
+import { HistorialMensajes } from './entities/historialMensajes.entity';
+import { HistorialMensajesService } from './services/HistorialMensajes.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Bloqueo]),
+    TypeOrmModule.forFeature([Bloqueo,HistorialMensajes]),
     PeticionesModule,
     AseosModule,
     EventosModule,
@@ -33,7 +34,6 @@ import { SystemMessagesService } from './services/SystemMessages.service';
   ],
   providers: [
     WhatsappBotService,
-    ChatGptRespuestasService,
     SystemMessagesService,
     ChatGptMcpRespuestasService,
     TranscripcionService,
@@ -42,9 +42,10 @@ import { SystemMessagesService } from './services/SystemMessages.service';
     TeologiaService,
     JwtService,
     ControlToolService,
-    ControllerToolService
+    ControllerToolService,
+    HistorialMensajesService
 
   ],
-  exports: [ChatGptRespuestasService, ChatGptMcpRespuestasService,SystemMessagesService],
+  exports: [ ChatGptMcpRespuestasService,SystemMessagesService, HistorialMensajesService],
 })
 export class ChatGptRespuestasModule {}

@@ -1,13 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { OpenAI } from 'openai';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Bloqueo } from 'src/whatsapp-bot/chat-gpt/entities/bloqueos.entity';
 
-
 @Injectable()
 export class ModerationService {
   private openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  private logger = new Logger(ModerationService.name);
 
   constructor(
     @InjectRepository(Bloqueo)
@@ -15,7 +15,7 @@ export class ModerationService {
   ) {}
 
   async verificarMensaje(telefono: string, mensaje: string) {
-    // 1. Llamada a la API de Moderation
+    // 1️⃣ Llamada a la API de moderación
     const response = await this.openai.moderations.create({
       model: 'omni-moderation-latest',
       input: mensaje,
@@ -23,35 +23,31 @@ export class ModerationService {
 
     const result = response.results[0];
 
-    // 2. Verificar si es ofensivo
-    if (!result.flagged) {
-      return false; // flujo normal
-    }
+    // 2️⃣ Verificar si es ofensivo
+    if (!result.flagged) return false; // mensaje seguro
 
-    // Clasificamos leve o grave según categorías detectadas
+    // 3️⃣ Clasificación leve o grave
     const categorias = result.categories;
-    let esGrave = false;
-
-    if (
+    const esGrave =
       categorias['violence'] ||
       categorias['hate'] ||
-      categorias['harassment/threatening']
-    ) {
-      esGrave = true;
-    }
+      categorias['harassment/threatening'];
 
-    // 3. Manejo en BD
+    // 4️⃣ Obtener o crear registro de bloqueo
     let bloqueo = await this.bloqueoRepo.findOne({ where: { telefono } });
-
     if (!bloqueo) {
-      bloqueo = this.bloqueoRepo.create({ telefono });
+      bloqueo = this.bloqueoRepo.create({
+        telefono,
+        ofensasGraves: 0, // inicializamos en 0
+      });
     }
 
+    // 5️⃣ Incrementar ofensas graves de forma segura
     if (esGrave) {
-      bloqueo.ofensasGraves += 1;
+      bloqueo.ofensasGraves = (bloqueo.ofensasGraves ?? 0) + 1;
 
+      // 6️⃣ Verificar si alcanza límite de bloqueos
       if (bloqueo.ofensasGraves >= 3) {
-        // Aquí el agente IA decide el tiempo de baneo
         const tiempo = await this.decidirTiempoDeBaneo(
           mensaje,
           bloqueo.ofensasGraves,
@@ -63,20 +59,25 @@ export class ModerationService {
         await this.bloqueoRepo.save(bloqueo);
 
         return `
-        Has sido bloqueado por ${tiempo.dias} días. 
+        Has sido bloqueado por ${tiempo.dias} días.
         Motivo: ${tiempo.motivo}.
         El bloqueo se levantará el ${tiempo.fechaFin.toLocaleDateString()}.
         `;
       }
     }
 
+    // 7️⃣ Guardar cambios en BD (aunque sea leve)
     await this.bloqueoRepo.save(bloqueo);
 
-    const mensajeOfensivo = esGrave ? `Indicale al usuario que su mensaje fue ofensivo y que puede ser motivo de bloqueo por 3 ofensas graves.` : `Indicale al usuario que su mensaje fue ofensivo, pero no lo bloquearemos. puedes pedir explicaciones del motivo del mensaje ofensivo.`; 
+    // 8️⃣ Mensaje informativo al usuario
+    const mensajeOfensivo = esGrave
+      ? `Tu mensaje fue ofensivo y puede ser motivo de bloqueo si acumulas 3 ofensas graves.`
+      : `Tu mensaje fue ofensivo, pero no alcanza para bloqueo. Puedes explicar tu motivo.`;
+
     return mensajeOfensivo;
   }
 
-  // Esta función puede delegar al agente IA la decisión
+  // Función que delega al agente IA la decisión del tiempo de baneo
   private async decidirTiempoDeBaneo(
     mensaje: string,
     cantidad: number,
@@ -88,7 +89,7 @@ El usuario ha acumulado ${cantidad} ofensas graves.
 El último mensaje fue: "${mensaje}"
 Las categorías detectadas fueron: ${JSON.stringify(categorias)}.
 
-Debes decidir el tiempo de bloqueo según la cantidad de ofensas, contexto del mensaje y las categorías.:
+Debes decidir el tiempo de bloqueo según la cantidad de ofensas, contexto del mensaje y las categorías.
 
 Responde estrictamente en JSON con este formato:
 {
@@ -97,7 +98,7 @@ Responde estrictamente en JSON con este formato:
 }`;
 
     const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4.1-mini', // puedes usar gpt-4o-mini o gpt-5-mini
+      model: 'gpt-4.1-mini', // puedes usar gpt-5-mini si quieres
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' }, // obliga a JSON
     });
@@ -107,6 +108,7 @@ Responde estrictamente en JSON con este formato:
     const dias = respuesta.dias ?? 3;
     const motivo =
       respuesta.motivo ?? `Ofensas graves acumuladas (${cantidad}).`;
+
     return {
       fechaFin: new Date(Date.now() + dias * 24 * 60 * 60 * 1000),
       motivo,

@@ -32,12 +32,12 @@ export class PeticionesService {
       await this.crearPeticion({
         contenido,
         categoria,
-        nombre: nombre || undefined,
-        telefono: telefono || undefined,
+        nombre: nombre || 'undefined',
+        telefono: telefono || '',
         estado: 'pendiente',
       });
-      await this.manejoMensajesService.guardarMensaje(telefono, redaccion, 'Peticion');
-      return 'Petición guardada con éxito';
+      const mensajeGuardado = await this.manejoMensajesService.guardarMensaje(telefono, redaccion, 'Peticion');
+      return mensajeGuardado;
     } catch (error) {
       return `Error al guardar la petición: ${error.message}`;
     }

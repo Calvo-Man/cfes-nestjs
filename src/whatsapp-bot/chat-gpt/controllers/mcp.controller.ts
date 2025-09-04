@@ -8,6 +8,7 @@ import { ManejoDeMensajesService } from 'src/manejo-de-mensajes/manejo-de-mensaj
 import { AsistenciasService } from 'src/asistencias/asistencias.service';
 import { PeticionesService } from 'src/peticiones/peticiones.service';
 import { TeologiaService } from '../services/teologia.service';
+import { HistorialMensajesService } from '../services/HistorialMensajes.service';
 
 @Injectable()
 export class ControllerToolService {
@@ -21,9 +22,13 @@ export class ControllerToolService {
     private readonly manejoDeMensajesService: ManejoDeMensajesService,
     private readonly asistenciasService: AsistenciasService,
     private readonly peticionesService: PeticionesService,
+    private readonly historialMensajesService: HistorialMensajesService,
   ) {}
 
   // 🔹 Solo expones los que quieres que usen las tools
+  getHistorialMensajesService() {
+    return this.historialMensajesService;
+  }
   getMiembrosService() {
     return this.miembrosService;
   }

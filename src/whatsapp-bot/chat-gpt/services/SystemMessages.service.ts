@@ -27,6 +27,7 @@ async onModuleInit() {
   }
 
   this.mensajeInterno = `${this.telefonoDeSistema} Te está escribiendo el sistema, y eres el encargado de redactar y ejecutar los mensajes que te envíe y ejecuta la tarea sin esperar confirmación.`;
+  
 }
 
   async recepcionarMensajesParaSistema(telefono: string, contenido: string) {
@@ -38,7 +39,11 @@ async onModuleInit() {
     return response;
   }
 
-  //@Cron('* * * * *') // Cada minuto (puedes cambiarlo al horario que necesites)
+ // Cada dia a las 2 pm bogota
+  @Cron('0 14 * * *', {
+    name: 'mensajeDiario',
+    timeZone: 'America/Bogota',
+  }) // Cada dia a las 2 pm
   async mensajeDiario() {
     if (!this.numeroDeSistema) {
       console.warn('Número del sistema no inicializado.');
@@ -55,7 +60,7 @@ async onModuleInit() {
       mensajeCompleto,
       this.mensajeInterno
     );
-
+    console.log(response);
     return response;
   }
 

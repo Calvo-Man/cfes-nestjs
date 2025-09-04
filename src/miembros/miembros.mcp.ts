@@ -5,7 +5,7 @@ import { Horario } from '../miembros/enum/horario.enum';
 export const miembrosIaMcpTools = (miembrosService: MiembrosService) => [
   {
     name: 'actualizar_horario_aseo_ia',
-    description: 'Actualiza el horario de aseo de un miembro por su ID usando IA',
+    description: 'Actualiza el dia preferido de aseo de un miembro por su teléfono',
     inputSchema: {
       type: 'object',
       properties: {

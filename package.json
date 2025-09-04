@@ -61,7 +61,7 @@
     "socket.io-client": "^4.8.1",
     "twilio": "^5.7.1",
     "typeorm": "^0.3.24",
-    "whatsapp-web.js": "github:BenyFilho/whatsapp-web.js#fix_event_ready"
+    "whatsapp-web.js": "github:BenyFilho/whatsapp-web.js#fix_event_ready_again"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

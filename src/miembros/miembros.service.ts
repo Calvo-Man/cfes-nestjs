@@ -270,7 +270,7 @@ A partir de ahora recibirás por este medio notificaciones importantes como asig
       rol: miembro.rol,
       cargo: miembro.cargo,
       disponibilidad_aseo: miembro.disponibilidad_aseo,
-      horario_aseo: miembro.horario_aseo,
+      dia_preferido: miembro.horario_aseo,
       modo_respuesta: miembro.modo_respuesta,
     };
   }
@@ -348,7 +348,7 @@ A partir de ahora recibirás por este medio notificaciones importantes como asig
     }
   }
    async updateHorarioAseoIATelefono(telefono: string, horario_aseo: Horario) {
-    const miembro = await this.findOneByTelefono(telefono);
+    const miembro = await this.miembroRepository.findOne({ where: { telefono } });
 
     if (!miembro) {
       throw new BadRequestException('Miembro no encontrado');

@@ -11,6 +11,7 @@ import { ManejoDeMensajesService } from 'src/manejo-de-mensajes/manejo-de-mensaj
 import { MiembrosService } from 'src/miembros/miembros.service';
 import { ChatGptMcpRespuestasService } from './chat-gpt/chat-gpt-respuestas.service';
 import { SystemMessagesService } from './chat-gpt/services/SystemMessages.service';
+import { HistorialMensajesService } from './chat-gpt/services/HistorialMensajes.service';
 
 @Injectable()
 export class WhatsappBotService implements OnModuleInit {
@@ -32,6 +33,7 @@ export class WhatsappBotService implements OnModuleInit {
     private readonly transcripcionService: TranscripcionService,
     private readonly miembrosService: MiembrosService,
     private readonly systemMessagesService: SystemMessagesService,
+    private readonly historialService: HistorialMensajesService,
   ) {}
 
   onModuleInit() {
@@ -49,14 +51,13 @@ export class WhatsappBotService implements OnModuleInit {
     });
   }
 
-
   private async initializeBot() {
-
-
     if (this.client) {
       this.client
         .destroy()
-        .catch(() => this.logger.warn('No se pudo destruir el cliente anterior.'));
+        .catch(() =>
+          this.logger.warn('No se pudo destruir el cliente anterior.'),
+        );
     }
 
     this.client = new Client({
@@ -64,11 +65,10 @@ export class WhatsappBotService implements OnModuleInit {
         clientId: 'cfe-bot',
         dataPath: this.sessionPath,
       }),
-    
+
       puppeteer: {
         headless: true,
-        args: ['--disable-gpu', '--disable-dev-shm-usage']
-
+        args: ['--disable-gpu', '--disable-dev-shm-usage'],
       },
     });
 
@@ -219,8 +219,8 @@ export class WhatsappBotService implements OnModuleInit {
   }
 
   private async delayRandom() {
-    const min = 4000;
-    const max = 7000;
+    const min = 2000;
+    const max = 6000;
     await this.delay(Math.floor(Math.random() * (max - min + 1)) + min);
   }
 
@@ -238,7 +238,7 @@ export class WhatsappBotService implements OnModuleInit {
 
       const chat = await this.client.getChatById(chatId).catch(() => null);
       await this.client.sendMessage(chatId, mensaje);
-      if (chat) await chat.clearState();
+      await this.historialService.agregarMensaje(numero.split('@')[0], 'assistant', mensaje);
     } catch (err) {
       this.logger.warn(`❌ Error al enviar mensaje: ${err.message}`);
     }

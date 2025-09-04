@@ -3,6 +3,7 @@ import {
   forwardRef,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { CreateAseoDto } from './dto/create-aseo.dto';
@@ -17,6 +18,7 @@ import { ManejoDeMensajesService } from 'src/manejo-de-mensajes/manejo-de-mensaj
 
 @Injectable()
 export class AseosService {
+  private readonly logger = new Logger(AseosService.name);
   constructor(
     @InjectRepository(Aseo)
     private readonly aseoRepository: Repository<Aseo>,
@@ -127,67 +129,79 @@ export class AseosService {
     });
     return aseos;
   }
-  @Cron('0 8 * * *') // Todos los días a las 8 AM
+  // Cron todos los días a las 13:00 hora Colombia
+  @Cron('* * * * *', {
+    name: 'recordatorioAseo',
+    timeZone: 'America/Bogota',
+  })
   async recordatorioAseoTomorrow() {
     const hoy = new Date();
+
+    // Se calcula mañana
     const manana = new Date(
       hoy.getFullYear(),
       hoy.getMonth(),
       hoy.getDate() + 1,
     );
+    this.logger.log(`⏰ Ejecutando tarea de recordatorio de aseo para ${manana.toDateString()}`);
+    // Rango de búsqueda para todo el día siguiente
     const fechaInicio = new Date(manana.setHours(0, 0, 0, 0));
     const fechaFin = new Date(manana.setHours(23, 59, 59, 999));
 
+    // Buscar asignaciones de aseo para mañana
     const aseos = await this.aseoRepository.find({
-      where: {
-        fecha: Between(fechaInicio, fechaFin),
-      },
+      where: { fecha: Between(fechaInicio, fechaFin) },
       relations: ['miembro'],
     });
 
     if (aseos.length === 0) {
-      console.log('✅ No hay aseos programados para mañana.');
+      this.logger.log('✅ No hay aseos programados para mañana.');
       return;
     }
 
     for (const aseo of aseos) {
       const { miembro, fecha } = aseo;
 
-      // Filtrar los otros asignados el mismo día, excluyendo al actual
+      // Filtrar los demás asignados el mismo día (excluyendo al actual)
       const otros = aseos
         .filter((a) => a.miembro.id !== miembro.id)
         .map((a) => a.miembro);
 
+      // Mensaje personalizado
       const mensaje = `*⏰ Recordatorio de aseo - CFES San Pelayo*
-
-*Nota:* Este mensaje fue enviado automáticamente por el sistema. La IA no tiene contexto sobre este mensaje.
 
 Hola estimado/a *${miembro.name}*,
 
-Te recordamos que *mañana (${dayjs(fecha).locale('es').format('dddd DD [de] MMMM [de] YYYY')})* has sido asignado/a para el aseo en el templo.
+Te recordamos que *mañana (${dayjs(fecha)
+        .locale('es')
+        .format(
+          'dddd DD [de] MMMM [de] YYYY',
+        )})* has sido asignado/a para el aseo en el templo.
 
 Los compañeros que servirán contigo son:
-${otros.length > 0 ? otros.map((m) => `* *${m.name} ${m.apellido}*`).join('\n') : '*Ninguno (No hay suficientes miembros disponibles)*'}.
+${
+  otros.length > 0
+    ? otros.map((m) => `* *${m.name} ${m.apellido}*`).join('\n')
+    : '*Ninguno (No hay suficientes miembros disponibles)*'
+}.
 
 🙏 Te agradecemos tu disposición y compromiso.
 > *Centro de Fe y Esperanza - San Pelayo*`;
 
       try {
-        await this.manejoMensajesService.guardarMensaje(
-          `${miembro.telefono}@c.us`,
-          mensaje,
-          'Sistema',
-        );
-        console.log(`📤 Recordatorio enviado a ${miembro.name}`);
+        // await this.manejoMensajesService.guardarMensaje(
+        //   `${miembro.telefono}`,
+        //   mensaje,
+        //   'Sistema',
+        // );
+        this.logger.log(`📤 Recordatorio enviado a ${miembro.name}`);
       } catch (error) {
-        console.error(
-          `❌ Error al enviar recordatorio a ${miembro.name}:`,
-          error.message,
+        this.logger.error(
+          `❌ Error al enviar recordatorio a ${miembro.name}: ${error.message}`,
         );
       }
     }
   }
-
   async buscarEncargadosdeAseoPorFechas(fechas: string[]) {
     const encargados = await this.aseoRepository.find({
       where: {

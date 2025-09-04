@@ -177,7 +177,7 @@ async obtenerPeticionesPorMes(telefono: string): Promise<any> {
     return {
       audioPath: '',
       text: `Miembro: ${miembro.name} ${miembro.apellido}\nRol: ${miembro.rol}\nTeléfono: ${miembro.telefono.split('57')[1]}
-        \nDia en el mes que el miembro seleccionó para disponibilidad de aseo: ${miembro.horario_aseo}
+        \nDia en el mes que el miembro seleccionó para disponibilidad de aseo: ${miembro.dia_preferido}
         \nDias en el mes que se hace aseo: Domingos y Jueves.`,
     };
   }

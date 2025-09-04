@@ -8,8 +8,9 @@ export class Peticion {
   @Column({ nullable: true })
   nombre: string;
 
-  @Column()
-  contenido: string;
+  @Column({ type: 'text' })
+contenido: string;
+
 
   @Column({ default: 'pendiente' })
   estado: 'pendiente' | 'en_oracion' | 'respondida';

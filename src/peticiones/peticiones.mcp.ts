@@ -5,7 +5,7 @@ import { PeticionesService } from './peticiones.service';
 export const peticionesMcpTools = (peticionesService: PeticionesService) => [
   {
     name: 'crear_peticion',
-    description: 'Crea una nueva petición de oración en el sistema',
+    description: 'Guarda una nueva petición de oración en el sistema y la envia al equipo de intercesión (Siempre confirma con el usuario antes de guardar y muestra la redacción final)',
     inputSchema: {
       type: 'object',
       properties: {
@@ -34,14 +34,14 @@ export const peticionesMcpTools = (peticionesService: PeticionesService) => [
       required: ['contenido', 'categoria', 'nombre', 'telefono', 'redaccion'],
     },
     execute: async (args: any) => {
-      return await peticionesService.crearPeticion({
-        contenido: args.contenido,
-        categoria: args.categoria,
-        nombre: args.nombre,
-        telefono: args.telefono,
-        redaccion: args.redaccion,
-        estado: 'pendiente',
-      });
+      return await peticionesService.guardarPeticionPorAgenteIA(
+        args.contenido,
+        args.categoria,
+        args.telefono,
+        args.redaccion,
+        args.nombre,
+      
+      );
     },
   },
   {
