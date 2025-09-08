@@ -9,6 +9,8 @@ import { AsistenciasService } from 'src/asistencias/asistencias.service';
 import { PeticionesService } from 'src/peticiones/peticiones.service';
 import { TeologiaService } from '../services/teologia.service';
 import { HistorialMensajesService } from '../services/HistorialMensajes.service';
+import { PuntajeService } from 'src/sistema-puntajes/sistema-puntajes.service';
+import { TriviaService } from 'src/sistema-puntajes/trivia.service';
 
 @Injectable()
 export class ControllerToolService {
@@ -23,9 +25,17 @@ export class ControllerToolService {
     private readonly asistenciasService: AsistenciasService,
     private readonly peticionesService: PeticionesService,
     private readonly historialMensajesService: HistorialMensajesService,
+    private readonly puntajeService: PuntajeService,
+    private readonly triviaService: TriviaService,
   ) {}
 
   // 🔹 Solo expones los que quieres que usen las tools
+  getPuntajeService() {
+    return this.puntajeService;
+  }
+  getTriviaService() {
+    return this.triviaService;
+  }
   getHistorialMensajesService() {
     return this.historialMensajesService;
   }

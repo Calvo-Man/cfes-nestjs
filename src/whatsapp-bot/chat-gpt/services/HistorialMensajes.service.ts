@@ -48,41 +48,42 @@ async agregarMensaje(
   });
 
   await this.historialRepo.save(nuevo);
+  console.log(`🔹 Mensaje agregado al historial (${telefono} - ${rol}): ${contenido}`);
 
   // 🔹 Limitar tamaño del historial
-  const mensajes = await this.historialRepo.find({
-    where: { telefono, rol: Not('system') as any },
-    order: { id: 'DESC' },
-  });
+  // const mensajes = await this.historialRepo.find({
+  //   where: { telefono, rol: Not('system') as any },
+  //   order: { id: 'DESC' },
+  // });
 
-  if (mensajes.length > this.LIMITE_CONSERVAR) {
-    const mensajesConservar = mensajes.slice(0, this.LIMITE_CONSERVAR - 50); // siempre conservar los más recientes
+  // if (mensajes.length > this.LIMITE_CONSERVAR) {
+  //   const mensajesConservar = mensajes.slice(0, this.LIMITE_CONSERVAR - 50); // siempre conservar los más recientes
 
-    // 🔑 Mantener bloque de toolCalls (assistant + tool responses asociadas)
-    const ultimoTool = mensajes.find((m) => m.toolCallId);
-    if (ultimoTool) {
-      const relacionados = mensajes.filter(
-        (m) =>
-          m.toolCallId === ultimoTool.toolCallId ||
-          (ultimoTool.toolCalls ?? []).some((tc) => tc.id === m.toolCallId),
-      );
+  //   // 🔑 Mantener bloque de toolCalls (assistant + tool responses asociadas)
+  //   const ultimoTool = mensajes.find((m) => m.toolCallId);
+  //   if (ultimoTool) {
+  //     const relacionados = mensajes.filter(
+  //       (m) =>
+  //         m.toolCallId === ultimoTool.toolCallId ||
+  //         (ultimoTool.toolCalls ?? []).some((tc) => tc.id === m.toolCallId),
+  //     );
 
-      for (const r of relacionados) {
-        if (!mensajesConservar.find((mc) => mc.id === r.id)) {
-          mensajesConservar.push(r);
-        }
-      }
-    }
+  //     for (const r of relacionados) {
+  //       if (!mensajesConservar.find((mc) => mc.id === r.id)) {
+  //         mensajesConservar.push(r);
+  //       }
+  //     }
+  //   }
 
-    const idsConservar = mensajesConservar.map((m) => m.id);
-    const idsEliminar = mensajes
-      .filter((m) => !idsConservar.includes(m.id))
-      .map((m) => m.id);
+  //   const idsConservar = mensajesConservar.map((m) => m.id);
+  //   const idsEliminar = mensajes
+  //     .filter((m) => !idsConservar.includes(m.id))
+  //     .map((m) => m.id);
 
-    if (idsEliminar.length) {
-      await this.historialRepo.delete(idsEliminar);
-    }
-  }
+  //   if (idsEliminar.length) {
+  //     await this.historialRepo.delete(idsEliminar);
+  //   }
+  // }
 
   return nuevo;
 }
@@ -121,7 +122,7 @@ async agregarMensaje(
       contenido,
     });
 
-    return this.historialRepo.save(nuevo);
+    return await this.historialRepo.save(nuevo);
   }
   async eliminarHistorial(telefono: string) {
     try {

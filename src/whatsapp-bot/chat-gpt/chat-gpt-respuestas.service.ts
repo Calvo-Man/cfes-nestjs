@@ -31,6 +31,8 @@ export class ChatGptMcpRespuestasService {
       miembrosService: this.controllerToolService.getMiembrosService(),
       historialMensajesService:
         this.controllerToolService.getHistorialMensajesService(),
+      puntajeService: this.controllerToolService.getPuntajeService(),
+      triviaService: this.controllerToolService.getTriviaService(),
     });
   }
 
@@ -84,7 +86,7 @@ export class ChatGptMcpRespuestasService {
 
       let historial = await this.historialService.obtenerHistorial(telefono);
       let messages = this.historialToMessages(historial);
-
+      this.logger.log(`🔹 Historial cargado: ${messages}`);
       const tools: OpenAI.Chat.ChatCompletionTool[] = this.toolsMcp.map(
         (t) => ({
           type: 'function',
@@ -94,12 +96,6 @@ export class ChatGptMcpRespuestasService {
             parameters: t.inputSchema,
           },
         }),
-      );
-
-      this.logger.log(
-        `🔹 Tools disponibles: ${tools
-          .map((t) => (t.type === 'function' ? t.function!.name : ''))
-          .join(', ')}`,
       );
 
       let respuestaFinal = '';
@@ -125,7 +121,7 @@ export class ChatGptMcpRespuestasService {
             name: tc.function.name,
             arguments: tc.function.arguments,
           }));
-
+        this.logger.log(`🔹 ${toolCalls.length}`);
         if (toolCalls.length === 0) {
           // ✅ Ya no hay tools → respuesta final
           respuestaFinal = choice.content ?? '';
@@ -134,14 +130,29 @@ export class ChatGptMcpRespuestasService {
             'assistant',
             respuestaFinal,
           );
-          break;
+          this.logger.log(`✅ ${telefono} - Respuesta final generada`);
+          // Modo de respuesta: texto o voz
+          if (
+            (await this.controlToolService.obtenerModoRespuesta(telefono)) ===
+            'voz'
+          ) {
+            const nombreFileName = `${telefono}_${Date.now()}`;
+            const rutaAudio = await this.controlToolService.textToSpeech(
+              respuestaFinal,
+              nombreFileName,
+            );
+            audioPath = rutaAudio.audioPath;
+            return { audioPath, text: rutaAudio.text };
+          }
+
+          return { audioPath: '', text: respuestaFinal };
         }
 
         // Guardar el mensaje del assistant que contiene las tool_calls
         await this.historialService.agregarMensaje(
           telefono,
           'assistant',
-          '', // no guardar "(to=functions...)" en historial
+          choice.content ?? '',
           undefined,
           toolCalls.map((tc) => ({
             id: tc.id,
@@ -149,13 +160,20 @@ export class ChatGptMcpRespuestasService {
             arguments: tc.arguments,
           })),
         );
+        this.logger.log(
+          `🔹 ${telefono} - Tool calls: ${toolCalls
+            .map((t) => t.name)
+            .join(', ')}`,
+        );
 
         // Ejecutar cada tool y registrar resultado
         for (const toolCall of toolCalls) {
           let args: any = {};
           try {
             args = JSON.parse(toolCall.arguments);
-            this.logger.log(`🔹 Argumentos de ${toolCall.name}: ${JSON.stringify(args)}`);
+            this.logger.log(
+              `🔹 Argumentos de ${toolCall.name}: ${JSON.stringify(args)}`,
+            );
           } catch (error) {
             this.logger.error('❌ Error parseando argumentos', error);
           }
@@ -168,7 +186,9 @@ export class ChatGptMcpRespuestasService {
               const res = await tool.execute(args);
               result = { text: JSON.stringify(res) };
 
-              this.logger.log(`🔹 Resultado de tool ${toolCall.name}: ${result.text}`);
+              this.logger.log(
+                `🔹 Resultado de tool ${toolCall.name}: ${result.text}`,
+              );
 
               if (toolCall.name === 'cambiar_modo_respuesta') {
                 await this.syncSystemPrompt(telefono, moderacion);
@@ -200,21 +220,6 @@ export class ChatGptMcpRespuestasService {
         historial = await this.historialService.obtenerHistorial(telefono);
         messages = this.historialToMessages(historial);
       }
-
-      // Modo de respuesta: texto o voz
-      if (
-        (await this.controlToolService.obtenerModoRespuesta(telefono)) === 'voz'
-      ) {
-        const nombreFileName = `${telefono}_${Date.now()}`;
-        const rutaAudio = await this.controlToolService.textToSpeech(
-          respuestaFinal,
-          nombreFileName,
-        );
-        audioPath = rutaAudio.audioPath;
-        return { audioPath, text: rutaAudio.text };
-      }
-
-      return { audioPath: '', text: respuestaFinal };
     } catch (error) {
       this.logger.error('❌ Error en responderPregunta', error);
       return {

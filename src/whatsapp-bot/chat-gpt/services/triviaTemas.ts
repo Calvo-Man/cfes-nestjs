@@ -230,12 +230,7 @@ export default class TriviaTemas {
       descripcion:
         'Querubines, serafines, Miguel y Gabriel, Satanás, potestades y principados.',
     },
-    {
-      id: 40,
-      nombre: 'El Reino de Dios',
-      descripcion:
-        'Ya pero todavía no, parábolas del reino, expectativa judía vs enseñanza de Jesús.',
-    },
+
   ];
 
   static temasAsistentes = [

@@ -49,12 +49,16 @@ export class ManejoDeMensajesService {
     if (!findMiembrio) {
       throw new BadRequestException('Miembro no encontrado');
     }
+    if(!telefono.startsWith('57')){
+      telefono='57'+telefono;
+    }
     const mensaje = this.mensasRepository.create({
       telefono,
       contenido,
       enviar_por,
     });
-    return this.mensasRepository.save(mensaje);
+    await this.mensasRepository.save(mensaje);
+    return 'El mensaje ha sido guardado y será enviado pronto.';
   }
   // Método para guardar varios mensajes:Lideres,servidores o asistentes
   // Este método recibe un array de categorias y guarda un mensaje para cada uno.

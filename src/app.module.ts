@@ -20,6 +20,7 @@ import { ManejoDeMensajesModule } from './manejo-de-mensajes/manejo-de-mensajes.
 import { ContratosModule } from './contratos/contratos.module';
 import { ChatGptRespuestasModule } from './whatsapp-bot/chat-gpt/respuesta-mensajes.module';
 import { PeticionesModule } from './peticiones/peticiones.module';
+import { PuntajesModule } from './sistema-puntajes/sistema-puntajes.module';
 
 @Module({
   imports: [
@@ -64,7 +65,8 @@ import { PeticionesModule } from './peticiones/peticiones.module';
     ManejoDeMensajesModule,
     ContratosModule,
     ChatGptRespuestasModule,
-    PeticionesModule
+    PeticionesModule,
+    PuntajesModule
   ],
   controllers: [AppController],
   providers: [AppService],

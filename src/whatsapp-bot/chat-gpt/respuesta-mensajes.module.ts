@@ -20,6 +20,7 @@ import { ChatGptMcpRespuestasService } from './chat-gpt-respuestas.service';
 import { SystemMessagesService } from './services/SystemMessages.service';
 import { HistorialMensajes } from './entities/historialMensajes.entity';
 import { HistorialMensajesService } from './services/HistorialMensajes.service';
+import { PuntajesModule } from 'src/sistema-puntajes/sistema-puntajes.module';
 
 @Module({
   imports: [
@@ -31,6 +32,8 @@ import { HistorialMensajesService } from './services/HistorialMensajes.service';
     MiembrosModule,
     CasasDeFeModule,
     AsistenciasModule,
+    PuntajesModule
+
   ],
   providers: [
     WhatsappBotService,

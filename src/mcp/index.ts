@@ -12,6 +12,10 @@ import { miembrosIaMcpTools } from 'src/miembros/miembros.mcp';
 import { MiembrosService } from 'src/miembros/miembros.service';
 import { peticionesMcpTools } from 'src/peticiones/peticiones.mcp';
 import { PeticionesService } from 'src/peticiones/peticiones.service';
+import { puntajesIaMcpTools } from 'src/sistema-puntajes/mcp/puntaje.mcp';
+import { triviasIaMcpTools } from 'src/sistema-puntajes/mcp/trivia.mcp';
+import { PuntajeService } from 'src/sistema-puntajes/sistema-puntajes.service';
+import { TriviaService } from 'src/sistema-puntajes/trivia.service';
 import { historialMcpTools } from 'src/whatsapp-bot/chat-gpt/services/HistorialMensajes.mcp';
 import { HistorialMensajesService } from 'src/whatsapp-bot/chat-gpt/services/HistorialMensajes.service';
 import { teologiaMcpTools } from 'src/whatsapp-bot/chat-gpt/services/teologia.mcp';
@@ -27,6 +31,9 @@ export function loadMcpTools(services: {
   mensajesService: ManejoDeMensajesService;
   miembrosService: MiembrosService;
   historialMensajesService: HistorialMensajesService;
+  puntajeService: PuntajeService;
+  triviaService: TriviaService;
+
 }) {
   return [
     ...peticionesMcpTools(services.peticionesService),
@@ -38,5 +45,7 @@ export function loadMcpTools(services: {
     ...mensajesIaMcpTools(services.mensajesService),
     ...miembrosIaMcpTools(services.miembrosService),
     ...historialMcpTools(services.historialMensajesService),
+    ...puntajesIaMcpTools(services.puntajeService),
+    ...triviasIaMcpTools(services.triviaService),
   ];
 }

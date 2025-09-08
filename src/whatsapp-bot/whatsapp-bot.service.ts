@@ -156,7 +156,8 @@ export class WhatsappBotService implements OnModuleInit {
         if (respuesta.audioPath) {
           await this.enviarAudioComoRespuesta(telefono, respuesta.audioPath);
         } else {
-          await this.enviarMensaje(message.from, respuesta.text);
+          //await this.enviarMensaje(message.from, respuesta.text);
+          await this.client.sendMessage(message.from, respuesta.text);
         }
         await chat.clearState();
       } else {
@@ -168,11 +169,13 @@ export class WhatsappBotService implements OnModuleInit {
           message.body,
           telefono,
         );
-
         if (respuesta.audioPath) {
           await this.enviarAudioComoRespuesta(telefono, respuesta.audioPath);
         } else {
-          await this.enviarMensaje(message.from, respuesta.text);
+          //await this.enviarMensaje(message.from, respuesta.text);
+          await this.client.sendMessage(message.from, respuesta.text);
+          console.log(`✅ Respuesta enviada a ${message.from}`);
+
         }
         await chat.clearState();
       }
@@ -230,7 +233,8 @@ export class WhatsappBotService implements OnModuleInit {
       if (!this.client || !this.client.info?.wid)
         throw new Error('Cliente de WhatsApp no está listo');
 
-      const chatId = numero.includes('@c.us') ? numero : `${numero}@c.us`;
+      let chatId = numero.includes('@c.us') ? numero : `${numero}@c.us`;
+      chatId = numero.startsWith('57') ? chatId : `57${chatId}`;
       this.logger.debug(`📤 Enviando a ${chatId}: ${mensaje}`);
 
       const isRegistered = await this.client.isRegisteredUser(chatId);
@@ -238,7 +242,11 @@ export class WhatsappBotService implements OnModuleInit {
 
       const chat = await this.client.getChatById(chatId).catch(() => null);
       await this.client.sendMessage(chatId, mensaje);
-      await this.historialService.agregarMensaje(numero.split('@')[0], 'assistant', mensaje);
+      await this.historialService.agregarMensaje(
+        numero.split('@')[0],
+        'assistant',
+        mensaje,
+      );
     } catch (err) {
       this.logger.warn(`❌ Error al enviar mensaje: ${err.message}`);
     }
@@ -258,7 +266,7 @@ export class WhatsappBotService implements OnModuleInit {
     }
   }
 
-  @Interval(600000)
+  @Interval(60000)
   async enviarMensajesPendientes() {
     if (this.enviandoMensajes) {
       this.logger.warn(
