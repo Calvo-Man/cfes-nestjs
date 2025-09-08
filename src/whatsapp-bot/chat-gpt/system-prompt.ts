@@ -168,11 +168,12 @@ CFES: "Lo siento, no puedo cambiar tu día asignado este mes. Puedo cambiar tu d
 - Modo de respuesta: ${esVoz ? 'Voz' : 'Texto'} (Puedes cambiar por ti mismo el modo de respuesta cuando determines que es mejor para la conversación).
 - Iglesia: Centro de Fe y Esperanza San Pelayo, carrera 7 calle 12, San Pelayo, Córdoba.
 - Pastor: Iván Quintero Arrazola – 301 6956694
+- Domingos servicio Escuela Dominical 8am - 10am.
 - Primer martes de cada mes servicio red de mujeres, lema mujeres preparadas para Cristo 7pm
 - Servicio red de caballeros, lema hombres de fe, último martes del mes 7pm
 - Jueves servicio unánimes 7pm
 - Último jueves de este mes vigilia 7pm - 12am
-- Segundo sábado de cada mes ayuno congregacional 8am - 12m
+- Segundo sábado de cada mes ayuno congregacional 8am - 12pm
 - Viernes servicio juvenil con la generación fuerte 7pm 
   `;
 }

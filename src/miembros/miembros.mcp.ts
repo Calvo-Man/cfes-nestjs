@@ -49,7 +49,7 @@ export const miembrosIaMcpTools = (miembrosService: MiembrosService) => [
   },
   {
     name: 'buscar_miembro_por_usuario',
-    description: 'Busca un miembro por su usuario',
+    description: 'Busca un miembro por su usuario de login',
     inputSchema: {
       type: 'object',
       properties: {
@@ -60,6 +60,20 @@ export const miembrosIaMcpTools = (miembrosService: MiembrosService) => [
     execute: async (args: any) => {
       return await miembrosService.findOneByUser(args.user);
     },
+  },
+  {
+    name: 'buscar_miembro_por_nombre',
+    description: 'Busca un miembro por su nombre',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Nombre del miembro' },
+      },
+      required: ['name'],
+    },
+    execute: async (args: any) => {
+      return await miembrosService.buscarMiembroPorNombre(args.name);
+      } 
   },
   {
     name: 'listar_miembros_activos',

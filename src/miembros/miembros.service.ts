@@ -1,7 +1,12 @@
-import { BadRequestException, forwardRef, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { CreateMiembroDto } from './dto/create-miembro.dto';
 import { UpdateMiembroDto } from './dto/update-miembro.dto';
-import { Between, In, IsNull, Repository } from 'typeorm';
+import { Between, Like, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Miembro } from './entities/miembro.entity';
 import * as bcrypt from 'bcrypt';
@@ -183,7 +188,7 @@ A partir de ahora recibirás por este medio notificaciones importantes como asig
   }
   async findAllMembers() {
     const miembros = await this.miembroRepository.find({
-      where: { activo: true ,disponibilidad_aseo: true},
+      where: { activo: true, disponibilidad_aseo: true },
     });
     if (!miembros) {
       throw new BadRequestException('Miembros no encontrados');
@@ -287,6 +292,13 @@ A partir de ahora recibirás por este medio notificaciones importantes como asig
     }
     return miembro;
   }
+
+  async buscarMiembroPorNombre(nombre: string) {
+    return this.miembroRepository.findOne({
+      where: { name: Like(`%${nombre}%`) },
+    });
+  }
+
   async update(id: number, updateMiembroDto: UpdateMiembroDto) {
     const findMiembro = await this.miembroRepository.findOne({ where: { id } });
     if (!findMiembro) {
@@ -347,8 +359,10 @@ A partir de ahora recibirás por este medio notificaciones importantes como asig
       );
     }
   }
-   async updateHorarioAseoIATelefono(telefono: string, horario_aseo: Horario) {
-    const miembro = await this.miembroRepository.findOne({ where: { telefono } });
+  async updateHorarioAseoIATelefono(telefono: string, horario_aseo: Horario) {
+    const miembro = await this.miembroRepository.findOne({
+      where: { telefono },
+    });
 
     if (!miembro) {
       throw new BadRequestException('Miembro no encontrado');
@@ -381,7 +395,7 @@ A partir de ahora recibirás por este medio notificaciones importantes como asig
       throw new BadRequestException('Error al eliminar miembro', error.message);
     }
   }
-  
+
   async cambiarDisponibilidadAseo(id: number) {
     const findMiembro = await this.miembroRepository.findOne({ where: { id } });
 

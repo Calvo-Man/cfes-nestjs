@@ -10,7 +10,7 @@ export class HistorialMensajesService {
     private readonly historialRepo: Repository<HistorialMensajes>,
   ) {}
 
-  private readonly LIMITE_CONSERVAR = 80; // mensajes
+  private readonly LIMITE_CONSERVAR = 100; // mensajes
   private readonly LIMITE_RETORNO = 50;
 
 async agregarMensaje(
@@ -35,28 +35,30 @@ async agregarMensaje(
     );
   }
 
-  // 🔹 Guardar mensaje normal o tool/assistant con metadata
+  // 🟢 Ajuste importante:
+  // - Si es `assistant` con toolCalls → se guarda el array en `toolCalls`
+  // - Si es `tool` → se guarda el `toolCallId` con su resultado
+  // - Si es normal (user/assistant sin tools) → se guarda como siempre
   const nuevo = this.historialRepo.create({
     telefono,
     rol,
     contenido,
-    toolCallId,
-    toolCalls,
+    toolCallId: toolCallId ?? null,
+    toolCalls: toolCalls ?? null,
   });
+
   await this.historialRepo.save(nuevo);
 
-  // 🔹 Obtener historial de no-system
+  // 🔹 Limitar tamaño del historial
   const mensajes = await this.historialRepo.find({
     where: { telefono, rol: Not('system') as any },
     order: { id: 'DESC' },
   });
 
-  // 🔹 Si se pasa del límite, conservar último ciclo completo
   if (mensajes.length > this.LIMITE_CONSERVAR) {
-    // Siempre conservar últimos N mensajes + el último ciclo completo
-    const mensajesConservar = mensajes.slice(0, this.LIMITE_CONSERVAR);
+    const mensajesConservar = mensajes.slice(0, this.LIMITE_CONSERVAR - 50); // siempre conservar los más recientes
 
-    // Asegurar que si hay toolCallId, se conserva el bloque entero
+    // 🔑 Mantener bloque de toolCalls (assistant + tool responses asociadas)
     const ultimoTool = mensajes.find((m) => m.toolCallId);
     if (ultimoTool) {
       const relacionados = mensajes.filter(
@@ -84,6 +86,7 @@ async agregarMensaje(
 
   return nuevo;
 }
+
 
   async obtenerHistorial(telefono: string): Promise<HistorialMensajes[]> {
     const [system, otros] = await Promise.all([

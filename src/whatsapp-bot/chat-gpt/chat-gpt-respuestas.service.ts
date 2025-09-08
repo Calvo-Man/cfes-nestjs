@@ -7,6 +7,7 @@ import { loadMcpTools } from 'src/mcp';
 import { ControllerToolService } from './controllers/mcp.controller';
 import { HistorialMensajesService } from './services/HistorialMensajes.service';
 import type { ChatCompletionMessageToolCall } from 'openai/resources/chat/completions';
+
 @Injectable()
 export class ChatGptMcpRespuestasService {
   private openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -33,9 +34,6 @@ export class ChatGptMcpRespuestasService {
     });
   }
 
-  /**
-   * Convierte historial en formato válido para OpenAI
-   */
   private historialToMessages(
     historial: any[],
   ): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
@@ -79,14 +77,13 @@ export class ChatGptMcpRespuestasService {
         mensaje,
       );
 
-      // Fuerza actualización por cambios de moderación
+      // Actualiza system prompt según moderación
       await this.syncSystemPrompt(telefono, moderacion);
 
       await this.historialService.agregarMensaje(telefono, 'user', mensaje);
+
       let historial = await this.historialService.obtenerHistorial(telefono);
-      const messages = this.historialToMessages(historial);
-      if (messages.length === 0)
-        throw new Error(`Historial vacío para ${telefono}`);
+      let messages = this.historialToMessages(historial);
 
       const tools: OpenAI.Chat.ChatCompletionTool[] = this.toolsMcp.map(
         (t) => ({
@@ -105,50 +102,60 @@ export class ChatGptMcpRespuestasService {
           .join(', ')}`,
       );
 
-      const chat = await this.openai.chat.completions.create({
-        model: 'gpt-5-mini',
-        messages,
-        tools,
-        tool_choice: 'auto',
-      });
+      let respuestaFinal = '';
+      let audioPath = '';
 
-      const choice = chat.choices[0].message;
-      const toolCalls = (choice.tool_calls ?? [])
-        .filter(
-          (tc): tc is ChatCompletionMessageToolCall & { type: 'function' } =>
-            tc.type === 'function',
-        )
-        .map((tc) => ({
-          id: tc.id,
-          name: tc.function.name,
-          arguments: tc.function.arguments,
-        }));
+      // 🔑 Bucle hasta que ya no haya tool calls
+      while (true) {
+        const chat = await this.openai.chat.completions.create({
+          model: 'gpt-5-mini',
+          messages,
+          tools,
+          tool_choice: 'auto',
+        });
 
-      // Si hay tool calls, ignoramos el content para no mostrar "(to=functions...)"
-      const contenidoAssistant =
-        toolCalls.length > 0 ? '' : (choice.content ?? '');
+        const choice = chat.choices[0].message;
+        const toolCalls = (choice.tool_calls ?? [])
+          .filter(
+            (tc): tc is ChatCompletionMessageToolCall & { type: 'function' } =>
+              tc.type === 'function',
+          )
+          .map((tc) => ({
+            id: tc.id,
+            name: tc.function.name,
+            arguments: tc.function.arguments,
+          }));
 
-      await this.historialService.agregarMensaje(
-        telefono,
-        'assistant',
-        contenidoAssistant,
-        undefined,
-        toolCalls.map((tc) => ({
-          id: tc.id,
-          name: tc.name,
-          arguments: tc.arguments,
-        })),
-      );
+        if (toolCalls.length === 0) {
+          // ✅ Ya no hay tools → respuesta final
+          respuestaFinal = choice.content ?? '';
+          await this.historialService.agregarMensaje(
+            telefono,
+            'assistant',
+            respuestaFinal,
+          );
+          break;
+        }
 
-      if (toolCalls.length > 0) {
-        this.logger.log(
-          `🔹 Tool calls para ${telefono}: ${toolCalls.map((t) => t.name).join(', ')}`,
+        // Guardar el mensaje del assistant que contiene las tool_calls
+        await this.historialService.agregarMensaje(
+          telefono,
+          'assistant',
+          '', // no guardar "(to=functions...)" en historial
+          undefined,
+          toolCalls.map((tc) => ({
+            id: tc.id,
+            name: tc.name,
+            arguments: tc.arguments,
+          })),
         );
+
+        // Ejecutar cada tool y registrar resultado
         for (const toolCall of toolCalls) {
           let args: any = {};
           try {
             args = JSON.parse(toolCall.arguments);
-            this.logger.log(`🔹 Argumentos de tool: ${JSON.stringify(args)}`);
+            this.logger.log(`🔹 Argumentos de ${toolCall.name}: ${JSON.stringify(args)}`);
           } catch (error) {
             this.logger.error('❌ Error parseando argumentos', error);
           }
@@ -161,14 +168,14 @@ export class ChatGptMcpRespuestasService {
               const res = await tool.execute(args);
               result = { text: JSON.stringify(res) };
 
-              this.logger.log(`🔹 Resultado de tool: ${result.text}`);
+              this.logger.log(`🔹 Resultado de tool ${toolCall.name}: ${result.text}`);
 
               if (toolCall.name === 'cambiar_modo_respuesta') {
                 await this.syncSystemPrompt(telefono, moderacion);
               }
               if (toolCall.name === 'eliminar_historial_mensajes') {
                 this.logger.log(
-                  `🔹 Historial eliminado para ${telefono}, saliendo de tool calls`,
+                  `🔹 Historial eliminado para ${telefono}, deteniendo ejecución`,
                 );
                 return {
                   audioPath: '',
@@ -189,56 +196,25 @@ export class ChatGptMcpRespuestasService {
           );
         }
 
-        const historialConTool =
-          await this.historialService.obtenerHistorial(telefono);
-        const messagesConTool = this.historialToMessages(historialConTool);
-
-        const segundaRespuesta = await this.openai.chat.completions.create({
-          model: 'gpt-5-mini',
-          messages: messagesConTool,
-        });
-
-        const respuestaFinal =
-          segundaRespuesta.choices[0].message.content ?? '';
-        await this.historialService.agregarMensaje(
-          telefono,
-          'assistant',
-          respuestaFinal,
-        );
-
-        if (
-          (await this.controlToolService.obtenerModoRespuesta(telefono)) ===
-          'voz'
-        ) {
-          const nombreFileName = `${telefono}_${Date.now()}`;
-          const rutaAudio = await this.controlToolService.textToSpeech(
-            respuestaFinal,
-            nombreFileName,
-          );
-          return { audioPath: rutaAudio.audioPath, text: rutaAudio.text };
-        }
-        return { audioPath: '', text: respuestaFinal };
+        // Actualizar historial con resultados de las tools
+        historial = await this.historialService.obtenerHistorial(telefono);
+        messages = this.historialToMessages(historial);
       }
 
-      // Sin tool calls
-      const respuestaNormal = choice.content ?? '';
-      await this.historialService.agregarMensaje(
-        telefono,
-        'assistant',
-        respuestaNormal,
-      );
-
+      // Modo de respuesta: texto o voz
       if (
         (await this.controlToolService.obtenerModoRespuesta(telefono)) === 'voz'
       ) {
         const nombreFileName = `${telefono}_${Date.now()}`;
         const rutaAudio = await this.controlToolService.textToSpeech(
-          respuestaNormal,
+          respuestaFinal,
           nombreFileName,
         );
-        return { audioPath: rutaAudio.audioPath, text: rutaAudio.text };
+        audioPath = rutaAudio.audioPath;
+        return { audioPath, text: rutaAudio.text };
       }
-      return { audioPath: '', text: respuestaNormal };
+
+      return { audioPath: '', text: respuestaFinal };
     } catch (error) {
       this.logger.error('❌ Error en responderPregunta', error);
       return {

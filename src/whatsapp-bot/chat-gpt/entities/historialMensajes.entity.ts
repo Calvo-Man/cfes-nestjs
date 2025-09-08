@@ -24,16 +24,14 @@ export class HistorialMensajes {
   })
   rol: RolMensaje;
 
-  // 🔹 Para assistant con tool_calls
   @Column({
-    type: 'json', // ✅ MySQL 5.7+ soporta JSON nativo
+    type: 'json',
     nullable: true,
   })
-  toolCalls?: { id: string; name: string; arguments: string }[];
+  toolCalls: { id: string; name: string; arguments: string }[] | null;
 
-  // 🔹 Para tool con referencia a un assistant.tool_calls.id
   @Column({ type: 'varchar', length: 100, nullable: true })
-  toolCallId?: string;
+  toolCallId: string | null;
 
   @Column({ type: 'longtext' }) // ✅ mejor que text si los mensajes son largos
   contenido: string;
