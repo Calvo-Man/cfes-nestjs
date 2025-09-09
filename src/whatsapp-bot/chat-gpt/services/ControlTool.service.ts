@@ -1,15 +1,20 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
+
 import { MiembrosService } from 'src/miembros/miembros.service';
 import { TTSService } from 'src/whatsapp-bot/text-to-voice.service';
-
 
 @Injectable()
 export class ControlToolService {
   constructor(
     @Inject(forwardRef(() => MiembrosService))
+    private miembrosService: MiembrosService,
     private textToSpeechService: TTSService,
   ) {}
 
+  async obtenerModoRespuesta(telefono: string): Promise<string> {
+    const modo = await this.miembrosService.obtenerModoRespuesta(telefono);
+    return modo || 'texto';
+  }
   async textToSpeech(text: string, filename: string): Promise<any> {
     const ruta = await this.textToSpeechService.convertirTextoAAudio(
       text,

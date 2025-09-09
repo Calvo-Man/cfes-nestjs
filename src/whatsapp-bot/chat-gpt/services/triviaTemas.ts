@@ -4,7 +4,7 @@ export default class TriviaTemas {
       id: 1,
       nombre: 'Biblia – Historias y Personajes',
       descripcion:
-        'Eventos y personajes principales de la Biblia, con curiosidades y relatos fáciles de entender.',
+        'Eventos y personajes principales de la Biblia, con curiosidades y relatos.',
     },
     {
       id: 2,
@@ -17,12 +17,6 @@ export default class TriviaTemas {
       nombre: 'Parábolas y Enseñanzas de Jesús',
       descripcion:
         'Historias y lecciones que enseñó Jesús sobre la vida y el Reino de Dios.',
-    },
-    {
-      id: 4,
-      nombre: 'Milagros de Jesús',
-      descripcion:
-        'Sanidades, liberaciones y señales que Jesús realizó durante su ministerio.',
     },
     {
       id: 5,
@@ -55,21 +49,10 @@ export default class TriviaTemas {
         'Alabanza, confianza y expresiones de fe contenidas en los Salmos.',
     },
     {
-      id: 10,
-      nombre: 'Amor y Valores Cristianos',
-      descripcion:
-        'Conceptos bíblicos de amor, perdón, misericordia y esperanza aplicables a la vida diaria.',
-    },
-    {
       id: 11,
       nombre: 'Profecías y Cumplimientos',
       descripcion:
         'Anuncios divinos y sus cumplimientos más destacados en la Biblia.',
-    },
-    {
-      id: 12,
-      nombre: 'Jesús y Su Ministerio',
-      descripcion: 'Vida, enseñanza y obra de Cristo para todos los creyentes.',
     },
     {
       id: 13,
@@ -88,18 +71,6 @@ export default class TriviaTemas {
       nombre: 'Dios y Sus Promesas',
       descripcion:
         'Conocimiento general sobre la fidelidad y promesas de Dios a su pueblo.',
-    },
-    {
-      id: 16,
-      nombre: 'Pecado y Arrepentimiento',
-      descripcion:
-        'Conceptos fundamentales de pecado, perdón y reconciliación bíblicos.',
-    },
-    {
-      id: 17,
-      nombre: 'Esperanza y Confianza',
-      descripcion:
-        'Promesas de Dios y cómo confiar en ellas según la Escritura.',
     },
     {
       id: 18,
@@ -219,18 +190,131 @@ export default class TriviaTemas {
         'Exilio en Babilonia, regreso con Esdras y Nehemías, reyes buenos y malos.',
     },
     {
-      id: 38,
-      nombre: 'Defensa de la fe (apologética bíblica)',
-      descripcion:
-        'Evidencias de la resurrección, confiabilidad de las Escrituras, unicidad de Cristo.',
-    },
-    {
       id: 39,
       nombre: 'Ángeles y demonios en la Biblia',
       descripcion:
         'Querubines, serafines, Miguel y Gabriel, Satanás, potestades y principados.',
     },
-
+    {
+      id: 40,
+      nombre: 'Autoría y transmisión de los textos bíblicos',
+      descripcion:
+        'Crítica textual, manuscritos antiguos, variantes y su impacto en la interpretación de la Biblia.',
+    },
+    {
+      id: 41,
+      nombre: 'Canon bíblico y libros apócrifos',
+      descripcion:
+        'Procesos históricos que definieron el canon, criterios de inclusión y exclusión de libros.',
+    },
+    {
+      id: 42,
+      nombre: 'Lenguas originales y traducción bíblica',
+      descripcion:
+        'Dificultades de traducir conceptos hebreos, arameos y griegos a otros idiomas modernos.',
+    },
+    {
+      id: 43,
+      nombre: 'Soberanía divina y libre albedrío',
+      descripcion:
+        'Tensión teológica entre la predestinación y la responsabilidad humana.',
+    },
+    {
+      id: 44,
+      nombre: 'Predestinación y elección',
+      descripcion:
+        'Contraste entre perspectivas calvinistas, arminianas y bíblicas sobre la salvación.',
+    },
+    {
+      id: 45,
+      nombre: 'Cristología del Antiguo Testamento',
+      descripcion:
+        'Tipologías, teofanías y profecías mesiánicas que apuntan a Cristo.',
+    },
+    {
+      id: 46,
+      nombre: 'El problema del mal',
+      descripcion:
+        'Cómo conciliar la existencia del mal con la soberanía y bondad de Dios.',
+    },
+    {
+      id: 47,
+      nombre: 'Justificación por la fe',
+      descripcion:
+        'Comparación entre Pablo, Santiago y debates de la Reforma Protestante.',
+    },
+    {
+      id: 48,
+      nombre: 'Escatología apocalíptica',
+      descripcion:
+        'Diferencias entre posturas pre-milenialistas, amilenialistas y post-milenialistas.',
+    },
+    {
+      id: 49,
+      nombre: 'El Espíritu Santo en la revelación',
+      descripcion:
+        'Inspiración, revelación progresiva y su papel en la formación del canon bíblico.',
+    },
+    {
+      id: 50,
+      nombre: 'Filosofía griega y Nuevo Testamento',
+      descripcion:
+        'Influencia del platonismo, estoicismo y helenismo en Pablo y Juan.',
+    },
+    {
+      id: 51,
+      nombre: 'El Siervo Sufriente en Isaías',
+      descripcion:
+        'Interpretaciones judías y cristianas, impacto en la cristología.',
+    },
+    {
+      id: 52,
+      nombre: 'La Ley y la Gracia',
+      descripcion:
+        'Relación entre Antiguo y Nuevo Testamento, debate en la iglesia primitiva.',
+    },
+    {
+      id: 53,
+      nombre: 'Resurrección de Cristo',
+      descripcion:
+        'Evidencias históricas, objeciones y defensa apologética del hecho central del cristianismo.',
+    },
+    {
+      id: 54,
+      nombre: 'La Trinidad',
+      descripcion:
+        'Fundamentos bíblicos, controversias históricas como el arrianismo y modalismo.',
+    },
+    {
+      id: 55,
+      nombre: 'Guerra espiritual',
+      descripcion:
+        'Enfoque bíblico sobre jerarquías angelicales, demonología y potestades.',
+    },
+    {
+      id: 56,
+      nombre: 'Israel y la iglesia en el plan de Dios',
+      descripcion:
+        'Posturas entre dispensacionalismo y teología del pacto en la historia de la redención.',
+    },
+    {
+      id: 57,
+      nombre: 'El libro de Hebreos',
+      descripcion:
+        'Jesús como sumo sacerdote, mediador y cumplimiento del nuevo pacto.',
+    },
+    {
+      id: 58,
+      nombre: 'Concilios de la iglesia primitiva',
+      descripcion:
+        'Debates sobre la divinidad de Cristo, canon y salvación en los primeros siglos.',
+    },
+    {
+      id: 59,
+      nombre: 'Herejías y su refutación',
+      descripcion:
+        'Origen del gnosticismo, arrianismo y judaizantes, y cómo fueron combatidos con la Escritura.',
+    },
   ];
 
   static temasAsistentes = [

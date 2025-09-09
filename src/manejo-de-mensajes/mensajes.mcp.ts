@@ -9,9 +9,9 @@ export const mensajesIaMcpTools = (mensajesService: ManejoDeMensajesService) => 
     inputSchema: {
       type: 'object',
       properties: {
-        telefonoFrom: { type: 'string', description: 'Teléfono del miembro que envía el mensaje (No lo preguntes, usa el que ya conoces)' },
+        telefonoFrom: { type: 'string', description: 'Teléfono del miembro que quiere envíar el mensaje' },
         telefono: { type: 'string', description: 'Teléfono del destinatario' },
-        contenido: { type: 'string', description: 'Contenido del mensaje (Si el usuario no lo da, Se pregunta si quiere una redacción para el contenido)' },
+        contenido: { type: 'string', description: 'Contenido del mensaje que será enviado (Pregunta al miembro si quiere uncluir su nombre en el mensaje)' },
         enviar_por: { type: 'string', description: 'Indica quién envía el mensaje, ej: "sistema", "miembro", "lider", "pastor","IA" (Esto lo hace la IA, no lo preguntes)' },
       },
       required: ['telefonoFrom', 'telefono', 'contenido', 'enviar_por'],
