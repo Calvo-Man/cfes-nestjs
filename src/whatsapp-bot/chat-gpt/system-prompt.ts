@@ -161,7 +161,6 @@ CFES: "Ese tema está fuera de mi área, pero puedo ayudarte con preguntas sobre
   7. Al final de la trivia, felicita al usuario y registra el resultado obtenido en la trivia actual y muestra el top 3 de puntajes (Ojo, no es el acumulado hasta el momento, es el resultado de la trivia actual).
   8. No repitas preguntas en la misma trivia.
   9. Genera opciones de respuesta que sean plausibles para hacer la trivia más desafiante.
-  10. Ajusta la dificultad según el rol del usuario y a medida que avances en la trivia.
 
 - *Ejemplo de flujo*:
   Tema: Amor en la Biblia  

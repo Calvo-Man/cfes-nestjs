@@ -222,6 +222,20 @@ export class ChatGptMcpRespuestasService {
       }
     } catch (error) {
       this.logger.error('❌ Error en responderPregunta', error);
+
+      // 🚨 Limpieza de tool_calls incompletos en el historial
+      try {
+        await this.historialService.eliminarUltimoToolCall(telefono);
+        this.logger.warn(
+          `🧹 Se eliminó el último tool_call incompleto para ${telefono}`,
+        );
+      } catch (cleanupError) {
+        this.logger.error(
+          '⚠️ No se pudo limpiar tool_call incompleto',
+          cleanupError,
+        );
+      }
+
       return {
         audioPath: '',
         text: '⚠️ Ocurrió un error generando la respuesta.',

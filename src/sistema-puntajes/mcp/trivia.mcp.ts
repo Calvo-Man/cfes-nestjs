@@ -26,4 +26,15 @@ export const triviasIaMcpTools = (triviaService: TriviaService) => [
       return await triviaService.crearTrivia(args.titulo, semana);
     },
   },
+  {
+    name: 'obtener_trivia_activa',
+    description: 'Obtiene la trivia activa actual. Si no hay una trivia activa, lanza un error.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+    execute: async (args: any) => {
+      return await triviaService.obtenerTriviaActiva();
+    },
+  },
 ];

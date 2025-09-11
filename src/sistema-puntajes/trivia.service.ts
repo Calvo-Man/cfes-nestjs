@@ -43,6 +43,13 @@ export class TriviaService {
       throw new Error(`Error al crear trivia: ${error.message}`);
     }
   }
+  async obtenerTriviaActiva() {
+    const trivia = await this.triviaRepo.findOne({
+      where: { finalizada: false },
+    });
+    if (!trivia) throw new NotFoundException('Trivia no encontrada.');
+    return trivia;
+  }
 
   // 🔹 Se ejecuta cada día a medianoche
   @Cron('0 5 * * *')

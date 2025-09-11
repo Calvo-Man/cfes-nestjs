@@ -3,8 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import TriviaTemas from './triviaTemas';
 import { ChatGptMcpRespuestasService } from '../chat-gpt-respuestas.service';
 import { MiembrosService } from 'src/miembros/miembros.service';
-import { TriviaService } from 'src/sistema-puntajes/trivia.service';
-
+import VersiculosTemas from './versiculosTemas';
 @Injectable()
 export class SystemMessagesService implements OnModuleInit {
   private numeroDeSistema: any;
@@ -43,16 +42,15 @@ export class SystemMessagesService implements OnModuleInit {
   }
 
   // Cada dia a las 2 pm bogota
-  @Cron('0 22 * * *')
+  @Cron('0 10 * * *')
   async mensajeDiario() {
     if (!this.numeroDeSistema) {
       console.warn('Número del sistema no inicializado.');
       return;
     }
-    const temaElegido = TriviaTemas.escogerTemaAleatorio('miembro');
+    const temaElegido = VersiculosTemas.escogerTemaAleatorio();
 
-    const versiculoDiario = `Guarda un mensaje con el versículo de hoy y una breve explicación para los miembros de la iglesia. 
-    Tema: ${temaElegido.nombre} .\nDescripción: ${temaElegido.descripcion}.`;
+    const versiculoDiario = `Guarda un mensaje con el versículo de hoy sobre el tema: ${temaElegido.nombre} y una breve explicación para los miembros de la iglesia.`;
     //const triviaMensaje = await this.generarTriviaMiembros();
 
     // Concatenar versículo y trivia en un solo mensaje
@@ -69,11 +67,10 @@ export class SystemMessagesService implements OnModuleInit {
   @Cron('0 13 * * *')
   async versiculoDiarioAsistentes() {
     console.log('Enviando versículo diario...' + new Date().toLocaleString());
-    const temaElegido = TriviaTemas.escogerTemaAleatorio('asistente');
+    const temaElegido = VersiculosTemas.escogerTemaAleatorio();
     const mensaje = `
-    Guarda un mensaje con el versículo de hoy y una breve explicación para los asistentes de la iglesia y ademas invitalos a realizar la trivia para conocer mas de la palabra.
-     tema de la trivia: ${temaElegido.nombre} .\nDescripción: ${temaElegido.descripcion}.
-     Importante: Esta es una trivia para asistentes y no la registraras en el sistema.
+    Guarda un mensaje con el versículo de hoy sobre el tema: ${temaElegido.nombre} y una breve explicación para los asistentes de la iglesia.
+    y pregunta si tienen alguna duda o pregunta sobre el versículo o petición de oración.
     `;
     const response = await this.chatGptMcpRespuestasService.responderPregunta(
       mensaje,
@@ -84,7 +81,7 @@ export class SystemMessagesService implements OnModuleInit {
   }
 
   // Genera trivia para miembros
-  @Cron('4 1 * * *')
+  @Cron('4 10 * * *')
   private async generarTriviaMiembros() {
     console.log(
       'Generando trivia para miembros...' + new Date().toLocaleString(),
