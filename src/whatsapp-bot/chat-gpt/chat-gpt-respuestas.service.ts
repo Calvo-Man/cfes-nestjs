@@ -7,7 +7,6 @@ import { loadMcpTools } from 'src/mcp';
 import { ControllerToolService } from './controllers/mcp.controller';
 import { HistorialMensajesService } from './services/HistorialMensajes.service';
 import type { ChatCompletionMessageToolCall } from 'openai/resources/chat/completions';
-import e from 'express';
 
 @Injectable()
 export class ChatGptMcpRespuestasService {
@@ -85,7 +84,7 @@ export class ChatGptMcpRespuestasService {
 
       await this.historialService.agregarMensaje(telefono, 'user', mensaje);
 
-      let historial = await this.historialService.obtenerHistorial(telefono);
+      let historial = await this.historialService.obtenerHistorialActivo(telefono);
       let messages = this.historialToMessages(historial);
       this.logger.log(`🔹 Historial cargado: ${messages}`);
       const tools: OpenAI.Chat.ChatCompletionTool[] = this.toolsMcp.map(
@@ -218,7 +217,7 @@ export class ChatGptMcpRespuestasService {
         }
 
         // Actualizar historial con resultados de las tools
-        historial = await this.historialService.obtenerHistorial(telefono);
+        historial = await this.historialService.obtenerHistorialActivo(telefono);
         messages = this.historialToMessages(historial);
       }
     } catch (error) {

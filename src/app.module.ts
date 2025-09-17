@@ -29,7 +29,7 @@ import { PuntajesModule } from './sistema-puntajes/sistema-puntajes.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
-      ServeStaticModule.forRoot({
+    ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/uploads', // Esto hace que la URL sea: http://localhost:3000/uploads
     }),
@@ -50,8 +50,10 @@ import { PuntajesModule } from './sistema-puntajes/sistema-puntajes.module';
         //   rejectUnauthorized: false
         // },
       }),
+
       inject: [ConfigService],
     }),
+
     MiembrosModule,
     RolesModule,
     AseosModule,
@@ -66,7 +68,7 @@ import { PuntajesModule } from './sistema-puntajes/sistema-puntajes.module';
     ContratosModule,
     ChatGptRespuestasModule,
     PeticionesModule,
-    PuntajesModule
+    PuntajesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -50,35 +50,31 @@ export class SystemMessagesService implements OnModuleInit {
     }
     const temaElegido = VersiculosTemas.escogerTemaAleatorio();
 
-    const versiculoDiario = `Guarda un mensaje con el versículo de hoy sobre el tema: ${temaElegido.nombre} y una breve explicación para los miembros de la iglesia.`;
-    //const triviaMensaje = await this.generarTriviaMiembros();
-
-    // Concatenar versículo y trivia en un solo mensaje
-    //const mensajeCompleto = `${versiculoDiario}\n\n${triviaMensaje}`;
+    const versiculoDiario = `Guarda un mensaje con el versículo de hoy sobre el tema: ${temaElegido.nombre} y una breve reflexión para los miembros de la iglesia.`;
+    
 
     const response = await this.chatGptMcpRespuestasService.responderPregunta(
       versiculoDiario,
       this.mensajeInterno,
     );
-    console.log(response);
     return response;
   }
 
-  @Cron('0 13 * * *')
-  async versiculoDiarioAsistentes() {
-    console.log('Enviando versículo diario...' + new Date().toLocaleString());
-    const temaElegido = VersiculosTemas.escogerTemaAleatorio();
-    const mensaje = `
-    Guarda un mensaje con el versículo de hoy sobre el tema: ${temaElegido.nombre} y una breve explicación para los asistentes de la iglesia.
-    y pregunta si tienen alguna duda o pregunta sobre el versículo o petición de oración.
-    `;
-    const response = await this.chatGptMcpRespuestasService.responderPregunta(
-      mensaje,
-      this.mensajeInterno,
-    );
-    console.log(response);
-    return response;
-  }
+  // @Cron('0 13 * * *')
+  // async versiculoDiarioAsistentes() {
+  //   console.log('Enviando versículo diario...' + new Date().toLocaleString());
+  //   const temaElegido = VersiculosTemas.escogerTemaAleatorio();
+  //   const mensaje = `
+  //   Guarda un mensaje con el versículo de hoy sobre el tema: ${temaElegido.nombre} y una breve reflexión para los asistentes de la iglesia.
+  //   y pregunta si tienen alguna duda o pregunta sobre el versículo o petición de oración.
+  //   `;
+  //   const response = await this.chatGptMcpRespuestasService.responderPregunta(
+  //     mensaje,
+  //     this.mensajeInterno,
+  //   );
+  //   console.log(response);
+  //   return response;
+  // }
 
   // Genera trivia para miembros
   @Cron('2 10 * * 1-6')
@@ -89,7 +85,6 @@ export class SystemMessagesService implements OnModuleInit {
     const temaElegido = TriviaTemas.escogerTemaAleatorio('miembro');
     const triviaMensaje = `📢 Comienza la competencia bíblica. 
 Registra en el sistema la trivia del día con el tema: *${temaElegido.nombre}*.
-Descripción del tema: ${temaElegido.descripcion}.
 
 Guarda un mensaje para los miembros de la iglesia con lo siguiente;
 Anuncia el inicio de la competencia biblica de manera motivadora y explicar brevemente el tema de la trivia de hoy, invitando a los miembros a participar. 

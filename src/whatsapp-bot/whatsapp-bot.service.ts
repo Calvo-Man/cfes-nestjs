@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
-import { Client, LocalAuth, MessageMedia } from 'whatsapp-web.js';
+import { Client, LocalAuth, Message, MessageMedia } from 'whatsapp-web.js';
 import * as qrcode from 'qrcode-terminal';
 import { Server } from 'socket.io';
 import { Interval } from '@nestjs/schedule';
@@ -24,9 +24,14 @@ export class WhatsappBotService implements OnModuleInit {
 
   private readyTimeout: NodeJS.Timeout;
   private reintentos = 0;
-  private readonly maxReintentos = 3;
+  //private readonly maxReintentos = 3;
   private readonly sessionPath = './auth/session-cfe';
-
+  // 👇 NUEVO: buffers por usuario
+  private buffers = new Map<
+    string,
+    { mensajes: Message[]; timeout: NodeJS.Timeout | null }
+  >();
+  private readonly DEBOUNCE_MS = 3000; // 4 s (puedes subir a 5000)
   constructor(
     public readonly manejoDeMensajesService: ManejoDeMensajesService,
     private readonly chatGptService: ChatGptMcpRespuestasService,
@@ -113,72 +118,24 @@ export class WhatsappBotService implements OnModuleInit {
 
     this.client.on('message', async (message) => {
       const telefono = message.from.split('@')[0];
-      if (
-        message.from.includes('status@broadcast') ||
-        message.to?.includes('status@broadcast')
-      ) {
-        console.log('⛔ Mensaje de status ignorado.');
-        return;
-      }
 
-      const modoRespuesta =
-        await this.miembrosService.obtenerModoRespuesta(telefono);
+      // Ignorar mensajes de estado
+      if (message.from.includes('status@broadcast')) return;
 
-      const chat = await message.getChat();
-      await chat.sendSeen();
+      // Agregar al buffer
+      const buffer = this.buffers.get(telefono) || {
+        mensajes: [],
+        timeout: null,
+      };
+      buffer.mensajes.push(message);
+      if (buffer.timeout) clearTimeout(buffer.timeout);
 
-      if (message.type === 'ptt') {
-        console.log('🎙️ Nuevo audio de voz de:', telefono);
-        if (modoRespuesta === 'texto') await chat.sendStateTyping();
-        else await chat.sendStateRecording();
+      buffer.timeout = setTimeout(
+        () => this.procesarBuffer(telefono, buffer.mensajes),
+        this.DEBOUNCE_MS,
+      );
 
-        const media = await message.downloadMedia();
-        if (!media) return;
-
-        const buffer = Buffer.from(media.data, 'base64');
-        const transcripcion =
-          await this.transcripcionService.transcribirDesdeBuffer(buffer);
-
-        console.log(`Transcripción: ${transcripcion}`);
-        if (transcripcion === 'No se pudo transcribir.') {
-          await this.enviarMensaje(
-            message.from,
-            '❌ No entendí tu audio, ¿puedes intentarlo de nuevo?',
-          );
-          return;
-        }
-
-        const respuesta = await this.chatGptService.responderPregunta(
-          transcripcion,
-          telefono,
-        );
-
-        if (respuesta.audioPath) {
-          await this.enviarAudioComoRespuesta(telefono, respuesta.audioPath);
-        } else {
-          //await this.enviarMensaje(message.from, respuesta.text);
-          await this.client.sendMessage(message.from, respuesta.text);
-        }
-        await chat.clearState();
-      } else {
-        console.log('📧 Nuevo mensaje de texto:', telefono, message.body);
-        if (modoRespuesta === 'texto') await chat.sendStateTyping();
-        else await chat.sendStateRecording();
-
-        const respuesta = await this.chatGptService.responderPregunta(
-          message.body,
-          telefono,
-        );
-        if (respuesta.audioPath) {
-          await this.enviarAudioComoRespuesta(telefono, respuesta.audioPath);
-        } else {
-          //await this.enviarMensaje(message.from, respuesta.text);
-          await this.client.sendMessage(message.from, respuesta.text);
-          console.log(`✅ Respuesta enviada a ${message.from}`);
-
-        }
-        await chat.clearState();
-      }
+      this.buffers.set(telefono, buffer);
     });
 
     try {
@@ -187,34 +144,49 @@ export class WhatsappBotService implements OnModuleInit {
       this.logger.error('❌ Error al inicializar cliente', err);
     }
   }
-
-  // private reiniciarSesion() {
-  //   if (this.reintentos >= this.maxReintentos) {
-  //     this.logger.error(
-  //       '🚨 Se alcanzó el máximo de reintentos, deteniendo reinicios automáticos.',
-  //     );
-  //     return;
-  //   }
-
-  //   this.reintentos++;
-  //   this.logger.warn(
-  //     `🔄 Reiniciando sesión (intento ${this.reintentos}/${this.maxReintentos})...`,
-  //   );
-
-  //   try {
-  //     if (fs.existsSync(this.sessionPath)) {
-  //       fs.removeSync(this.sessionPath);
-  //       this.logger.log('🗑️ Carpeta de sesión eliminada');
-  //     }
-  //   } catch (err) {
-  //     this.logger.error('❌ Error al eliminar la carpeta de sesión:', err);
-  //   }
-
-  //   setTimeout(() => this.initializeBot(), 3000);
-  // }
-
   setSocketServer(io: Server) {
     this.io = io;
+  }
+  // 👇 Nuevo método: procesa todos los mensajes acumulados del usuario
+  private async procesarBuffer(telefono: string, mensajes: Message[]) {
+    this.buffers.delete(telefono);
+
+    const chat = await mensajes[0].getChat();
+    const modoRespuesta =
+      await this.miembrosService.obtenerModoRespuesta(telefono);
+    if (modoRespuesta === 'texto') await chat.sendStateTyping();
+    else await chat.sendStateRecording();
+
+    const textos: string[] = [];
+
+    for (const msg of mensajes) {
+      if (msg.type === 'ptt') {
+        const media = await msg.downloadMedia();
+        if (!media) continue;
+        const buffer = Buffer.from(media.data, 'base64');
+        const t =
+          await this.transcripcionService.transcribirDesdeBuffer(buffer);
+        if (t && t !== 'No se pudo transcribir.') textos.push(t);
+      } else if (msg.type === 'chat') {
+        textos.push(msg.body);
+      }
+    }
+
+    if (!textos.length) return;
+
+    const prompt = textos.join('\n');
+    const respuesta = await this.chatGptService.responderPregunta(
+      prompt,
+      telefono,
+    );
+
+    if (respuesta.audioPath) {
+      await this.enviarAudioComoRespuesta(telefono, respuesta.audioPath);
+    } else {
+      await this.client.sendMessage(`${telefono}@c.us`, respuesta.text);
+    }
+
+    await chat.clearState();
   }
 
   private delay(ms: number) {
@@ -266,7 +238,7 @@ export class WhatsappBotService implements OnModuleInit {
     }
   }
 
-  @Interval(60000)
+  @Interval(600000)
   async enviarMensajesPendientes() {
     if (this.enviandoMensajes) {
       this.logger.warn(

@@ -1,4 +1,4 @@
-// src/puntajes/puntaje.service.ts
+// src/puntajes/sistema-puntaje.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -73,18 +73,18 @@ export class PuntajeService {
       where: { id: miembroId },
     });
     if (!miembro) throw new NotFoundException('Miembro no encontrado.');
-
-    // 1️⃣ Guardar puntaje diario
-    const puntaje = this.puntajeRepo.create({
-      miembro,
-      trivia,
-      semana: trivia.semana,
-      puntos,
-      correctas,
-      incorrectas,
-      finalizado: true,
+    const existingPuntaje = await this.puntajeRepo.findOne({
+      where: { miembro: { id: miembroId }, trivia: { id: triviaId }, finalizado: false },
     });
-    await this.puntajeRepo.save(puntaje);
+    if (!existingPuntaje) {
+      return 'El puntaje no existe, o ya fue finalizado previamente. intente registrar el inicio de la trivia primero.';
+    }
+      existingPuntaje.puntos = puntos;
+      existingPuntaje.correctas = correctas;
+      existingPuntaje.incorrectas = incorrectas;
+      existingPuntaje.finalizado = true;
+      await this.puntajeRepo.save(existingPuntaje);
+    
 
     // 2️⃣ Acumular en puntaje semanal
     let puntajeSemanal = await this.puntajeSemanalRepo.findOne({
@@ -126,6 +126,17 @@ export class PuntajeService {
     return this.puntajeSemanalRepo.find({
       where: { miembro: { id: miembroId } , semana: semana },
       order: { semana: 'DESC' },
+    });
+  }
+  async obtenerPuntajeDetalle(miembroId: number, semana: string) {
+    const miembro = await this.miembroRepo.findOne({
+      where: { id: miembroId },
+    });
+    if (!miembro) throw new NotFoundException('Miembro no encontrado.');
+    return this.puntajeRepo.find({
+      where: { miembro: { id: miembroId } , semana: semana },
+      order: { puntos: 'DESC' },
+      relations: ['trivia'],
     });
   }
 }

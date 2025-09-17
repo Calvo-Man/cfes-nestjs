@@ -21,6 +21,7 @@ import { SystemMessagesService } from './services/SystemMessages.service';
 import { HistorialMensajes } from './entities/historialMensajes.entity';
 import { HistorialMensajesService } from './services/HistorialMensajes.service';
 import { PuntajesModule } from 'src/sistema-puntajes/sistema-puntajes.module';
+import { RedisService } from './services/redis-historial.service';
 
 @Module({
   imports: [
@@ -32,7 +33,8 @@ import { PuntajesModule } from 'src/sistema-puntajes/sistema-puntajes.module';
     MiembrosModule,
     CasasDeFeModule,
     AsistenciasModule,
-    PuntajesModule
+    PuntajesModule,
+
 
   ],
   providers: [
@@ -46,7 +48,8 @@ import { PuntajesModule } from 'src/sistema-puntajes/sistema-puntajes.module';
     JwtService,
     ControlToolService,
     ControllerToolService,
-    HistorialMensajesService
+    HistorialMensajesService,
+    RedisService
 
   ],
   exports: [ ChatGptMcpRespuestasService,SystemMessagesService, HistorialMensajesService],

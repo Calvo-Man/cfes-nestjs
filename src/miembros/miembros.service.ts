@@ -360,6 +360,9 @@ A partir de ahora recibirás por este medio notificaciones importantes como asig
     }
   }
   async updateHorarioAseoIATelefono(telefono: string, horario_aseo: Horario) {
+    if (!telefono.startsWith('57')) {
+      telefono = '57' + telefono;
+    }
     const miembro = await this.miembroRepository.findOne({
       where: { telefono },
     });
