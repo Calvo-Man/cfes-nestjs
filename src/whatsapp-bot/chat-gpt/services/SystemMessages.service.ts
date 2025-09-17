@@ -81,7 +81,7 @@ export class SystemMessagesService implements OnModuleInit {
   }
 
   // Genera trivia para miembros
-  @Cron('4 10 * * *')
+  @Cron('2 10 * * 1-6')
   private async generarTriviaMiembros() {
     console.log(
       'Generando trivia para miembros...' + new Date().toLocaleString(),
@@ -103,13 +103,22 @@ Los ganadores serán anunciados los domingos.
       this.mensajeInterno,
     );
   }
-
-  // Genera trivia para asistentes
-  private async generarTriviaAsistentes() {
+  @Cron('2 10 * * 0')
+  async MensajeFinalTrivia() {
     console.log(
-      'Generando trivia para asistentes...' + new Date().toLocaleString(),
+      'Enviando mensaje final de trivia...' + new Date().toLocaleString(),
     );
-    const temaElegido = TriviaTemas.escogerTemaAleatorio('asistente');
-    return `Proponles a los asistentes realizar la trivia con el tema: ${temaElegido.nombre}.\nDescripción: ${temaElegido.descripcion}`;
+    const triviaFinalMensaje = `📢 La trivia del día ha finalizado.
+Guarda un mensaje para los miembros de la iglesia con lo siguiente;
+Anuncia el final de la competencia biblica de manera motivadora.
+Muestra el top 3 de ganadores de la semana y felicítalos.
+Invita a los miembros a estar atentos a la próxima trivia de mañana y a seguir participando para ganar.
+`;
+    await this.chatGptMcpRespuestasService.responderPregunta(
+      triviaFinalMensaje,
+      this.mensajeInterno,
+    );
   }
+
+
 }

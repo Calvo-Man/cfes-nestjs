@@ -7,6 +7,7 @@ import { loadMcpTools } from 'src/mcp';
 import { ControllerToolService } from './controllers/mcp.controller';
 import { HistorialMensajesService } from './services/HistorialMensajes.service';
 import type { ChatCompletionMessageToolCall } from 'openai/resources/chat/completions';
+import e from 'express';
 
 @Injectable()
 export class ChatGptMcpRespuestasService {
@@ -203,8 +204,8 @@ export class ChatGptMcpRespuestasService {
                 };
               }
             } catch (error) {
-              this.logger.error(`❌ Error ejecutando tool`, error);
-              result = { text: '❌ Error ejecutando tool' };
+              this.logger.error(`❌ Error ejecutando tool`, error.message);
+              result = { text: error.message || '❌ Error ejecutando tool'};
             }
           }
 
