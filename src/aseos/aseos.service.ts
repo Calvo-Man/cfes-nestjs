@@ -130,10 +130,7 @@ export class AseosService {
     return aseos;
   }
   // Cron todos los días a las 13:00 hora Colombia
-  @Cron('* * * * *', {
-    name: 'recordatorioAseo',
-    timeZone: 'America/Bogota',
-  })
+  @Cron('* 13 * * *')
   async recordatorioAseoTomorrow() {
     const hoy = new Date();
 
