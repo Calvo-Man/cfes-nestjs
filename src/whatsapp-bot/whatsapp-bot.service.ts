@@ -31,7 +31,16 @@ export class WhatsappBotService implements OnModuleInit {
     string,
     { mensajes: Message[]; timeout: NodeJS.Timeout | null }
   >();
-  private readonly DEBOUNCE_MS = 3000; // 4 s (puedes subir a 5000)
+  // En WhatsappBotService
+  private partialBuffers = new Map<
+    string,
+    { texto: string; timer: NodeJS.Timeout | null }
+  >();
+
+  private RATE_LIMIT_MS = 1500; // ⏱️ cada 1.5 s máx un mensaje
+  private MIN_CHARS = 40; // envía antes si hay >=40 caracteres
+
+  private readonly DEBOUNCE_MS = 4000; // 4 s (puedes subir a 5000)
   constructor(
     public readonly manejoDeMensajesService: ManejoDeMensajesService,
     private readonly chatGptService: ChatGptMcpRespuestasService,
@@ -149,45 +158,75 @@ export class WhatsappBotService implements OnModuleInit {
   }
   // 👇 Nuevo método: procesa todos los mensajes acumulados del usuario
   private async procesarBuffer(telefono: string, mensajes: Message[]) {
-    this.buffers.delete(telefono);
+  this.buffers.delete(telefono);
+  const chat = await mensajes[0].getChat();
 
-    const chat = await mensajes[0].getChat();
-    const modoRespuesta =
-      await this.miembrosService.obtenerModoRespuesta(telefono);
-    if (modoRespuesta === 'texto') await chat.sendStateTyping();
-    else await chat.sendStateRecording();
+  const modoRespuesta = await this.miembrosService.obtenerModoRespuesta(telefono);
+  if (modoRespuesta === 'texto') await chat.sendStateTyping();
+  else await chat.sendStateRecording();
 
-    const textos: string[] = [];
+  const textos: string[] = [];
 
-    for (const msg of mensajes) {
-      if (msg.type === 'ptt') {
-        const media = await msg.downloadMedia();
-        if (!media) continue;
-        const buffer = Buffer.from(media.data, 'base64');
-        const t =
-          await this.transcripcionService.transcribirDesdeBuffer(buffer);
-        if (t && t !== 'No se pudo transcribir.') textos.push(t);
-      } else if (msg.type === 'chat') {
-        textos.push(msg.body);
+  for (const msg of mensajes) {
+    if (msg.type === 'ptt') {
+      const media = await msg.downloadMedia();
+      if (!media) continue;
+      const buffer = Buffer.from(media.data, 'base64');
+      const t = await this.transcripcionService.transcribirDesdeBuffer(buffer);
+      if (t && t !== 'No se pudo transcribir.') textos.push(t);
+    } else if (msg.type === 'chat') {
+      textos.push(msg.body);
+    }
+  }
+
+  if (!textos.length) return;
+  const prompt = textos.join('\n');
+
+  let buffer = '';
+let timer: NodeJS.Timeout | null = null;
+
+  const flushBuffer = async () => {
+    if (buffer.trim()) {
+      await this.client.sendMessage(`${telefono}@c.us`, buffer.trim());
+      this.logger.debug(`📤 Enviando a ${telefono}: ${buffer.trim()}`);
+      buffer = '';
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
       }
     }
+  };
 
-    if (!textos.length) return;
+  const scheduleFlush = () => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(flushBuffer, 2000); // envía automáticamente cada 2 s si no hay punto final
+  };
+const start = Date.now();
+  const respuesta = await this.chatGptService.responderPregunta(
+    prompt,
+    telefono,
+    async (chunk) => {
+     console.log('📤 Chunk recibido a', Date.now() - start, 'ms:', chunk);
+      buffer += chunk;
+      // Envía si termina frase o buffer largo
+      if (/[.!?]\s$/.test(buffer) || buffer.length > 200) {
+        await flushBuffer();
+      } else {
+        scheduleFlush();
+      }
+    },
+  );
 
-    const prompt = textos.join('\n');
-    const respuesta = await this.chatGptService.responderPregunta(
-      prompt,
-      telefono,
-    );
+  // Enviar resto que quede en buffer
+  await flushBuffer();
 
-    if (respuesta.audioPath) {
-      await this.enviarAudioComoRespuesta(telefono, respuesta.audioPath);
-    } else {
-      await this.client.sendMessage(`${telefono}@c.us`, respuesta.text);
-    }
-
-    await chat.clearState();
+  // Si la IA produjo audio final
+  if (respuesta.audioPath) {
+    await this.enviarAudioComoRespuesta(telefono, respuesta.audioPath);
   }
+
+  await chat.clearState();
+}
 
   private delay(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));

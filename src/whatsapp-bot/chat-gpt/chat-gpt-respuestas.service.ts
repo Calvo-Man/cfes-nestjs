@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
+import { encoding_for_model } from '@dqbd/tiktoken';
 import systemPromptFunction from './system-prompt';
 import { ModerationService } from './services/moderation.service';
 import { ControlToolService } from './services/ControlTool.service';
@@ -7,6 +8,9 @@ import { loadMcpTools } from 'src/mcp';
 import { ControllerToolService } from './controllers/mcp.controller';
 import { HistorialMensajesService } from './services/HistorialMensajes.service';
 import type { ChatCompletionMessageToolCall } from 'openai/resources/chat/completions';
+
+const MAX_TOKENS_CHUNK = 400; // 🔑 tamaño del bloque en tokens
+const MODEL = 'gpt-5-mini';
 
 @Injectable()
 export class ChatGptMcpRespuestasService {
@@ -72,21 +76,28 @@ export class ChatGptMcpRespuestasService {
     return messages;
   }
 
-  async responderPregunta(mensaje: string, telefono: string): Promise<any> {
+  /**
+   * Envía respuesta final en streaming,
+   * cortando cada bloque según tokens.
+   */
+  async responderPregunta(
+    mensaje: string,
+    telefono: string,
+    onPartial?: (chunk: string) => Promise<void>, // callback de bloques
+  ): Promise<any> {
     try {
       const moderacion = await this.moderationService.verificarMensaje(
         telefono,
         mensaje,
       );
 
-      // Actualiza system prompt según moderación
       await this.syncSystemPrompt(telefono, moderacion);
-
       await this.historialService.agregarMensaje(telefono, 'user', mensaje);
 
-      let historial = await this.historialService.obtenerHistorialActivo(telefono);
+      let historial =
+        await this.historialService.obtenerHistorialActivo(telefono);
       let messages = this.historialToMessages(historial);
-      this.logger.log(`🔹 Historial cargado: ${messages}`);
+
       const tools: OpenAI.Chat.ChatCompletionTool[] = this.toolsMcp.map(
         (t) => ({
           type: 'function',
@@ -98,13 +109,12 @@ export class ChatGptMcpRespuestasService {
         }),
       );
 
-      let respuestaFinal = '';
       let audioPath = '';
 
-      // 🔑 Bucle hasta que ya no haya tool calls
+      // 🔁 Bucle hasta que no haya tool calls
       while (true) {
         const chat = await this.openai.chat.completions.create({
-          model: 'gpt-5-mini',
+          model: 'gpt-4.1-mini',
           messages,
           tools,
           tool_choice: 'auto',
@@ -121,17 +131,66 @@ export class ChatGptMcpRespuestasService {
             name: tc.function.name,
             arguments: tc.function.arguments,
           }));
-        this.logger.log(`🔹 ${toolCalls.length}`);
+
         if (toolCalls.length === 0) {
-          // ✅ Ya no hay tools → respuesta final
-          respuestaFinal = choice.content ?? '';
+          // ✅ Inicia stream final
+          this.logger.log(`✅ ${telefono} - Streaming tokenizado`);
+          const stream = await this.openai.chat.completions.create({
+            model: MODEL,
+            messages,
+            stream: true,
+          });
+          const encoder = encoding_for_model(MODEL);
+          let buffer = '';
+          let respuestaFinal = '';
+
+          for await (const chunk of stream) {
+            const delta = chunk.choices?.[0]?.delta?.content;
+            if (delta) {
+              buffer += delta;
+              respuestaFinal += delta;
+
+              const tokens = encoder.encode(buffer);
+
+              if (tokens.length >= MAX_TOKENS_CHUNK) {
+                // Buscar el último punto, signo de exclamación o interrogación
+                const ultimoPunto = Math.max(
+                  buffer.lastIndexOf('.'),
+                  buffer.lastIndexOf('!'),
+                  buffer.lastIndexOf('?'),
+                );
+
+                let enviar = buffer;
+
+                if (ultimoPunto !== -1) {
+                  // Enviar hasta el último signo de puntuación
+                  enviar = buffer.slice(0, ultimoPunto + 1);
+                  buffer = buffer.slice(ultimoPunto + 1); // Guardar el resto
+                } else {
+                  // Si no hay punto, enviamos todo para no bloquear el stream
+                  buffer = '';
+                }
+
+                if (onPartial) await onPartial(enviar);
+              }
+            }
+          }
+
+          // enviar cualquier resto que quede
+          if (buffer.trim()) {
+            if (onPartial) await onPartial(buffer);
+          }
+
+          encoder.free();
+
+          this.logger.log(`✅ ${telefono} - Streaming finalizado`);
+
           await this.historialService.agregarMensaje(
             telefono,
             'assistant',
             respuestaFinal,
           );
-          this.logger.log(`✅ ${telefono} - Respuesta final generada`);
-          // Modo de respuesta: texto o voz
+
           if (
             (await this.controlToolService.obtenerModoRespuesta(telefono)) ===
             'voz'
@@ -148,7 +207,7 @@ export class ChatGptMcpRespuestasService {
           return { audioPath: '', text: respuestaFinal };
         }
 
-        // Guardar el mensaje del assistant que contiene las tool_calls
+        // Guardar mensaje con tool_calls
         await this.historialService.agregarMensaje(
           telefono,
           'assistant',
@@ -160,22 +219,15 @@ export class ChatGptMcpRespuestasService {
             arguments: tc.arguments,
           })),
         );
-        this.logger.log(
-          `🔹 ${telefono} - Tool calls: ${toolCalls
-            .map((t) => t.name)
-            .join(', ')}`,
-        );
 
-        // Ejecutar cada tool y registrar resultado
+        // Ejecutar cada tool
         for (const toolCall of toolCalls) {
           let args: any = {};
+          this.logger.log(`⚠️ Ejecutando tool ${toolCall.name}`);
           try {
             args = JSON.parse(toolCall.arguments);
-            this.logger.log(
-              `🔹 Argumentos de ${toolCall.name}: ${JSON.stringify(args)}`,
-            );
-          } catch (error) {
-            this.logger.error('❌ Error parseando argumentos', error);
+          } catch (e) {
+            this.logger.error('❌ Error parseando argumentos', e);
           }
 
           const tool = this.toolsMcp.find((t) => t.name === toolCall.name);
@@ -186,25 +238,17 @@ export class ChatGptMcpRespuestasService {
               const res = await tool.execute(args);
               result = { text: JSON.stringify(res) };
 
-              this.logger.log(
-                `🔹 Resultado de tool ${toolCall.name}: ${result.text}`,
-              );
-
               if (toolCall.name === 'cambiar_modo_respuesta') {
                 await this.syncSystemPrompt(telefono, moderacion);
               }
               if (toolCall.name === 'eliminar_historial_mensajes') {
-                this.logger.log(
-                  `🔹 Historial eliminado para ${telefono}, deteniendo ejecución`,
-                );
                 return {
                   audioPath: '',
                   text: '⚠️ Se ha eliminado el historial de conversaciones.',
                 };
               }
-            } catch (error) {
-              this.logger.error(`❌ Error ejecutando tool`, error.message);
-              result = { text: error.message || '❌ Error ejecutando tool'};
+            } catch (e) {
+              result = { text: e.message || '❌ Error ejecutando tool' };
             }
           }
 
@@ -216,26 +260,16 @@ export class ChatGptMcpRespuestasService {
           );
         }
 
-        // Actualizar historial con resultados de las tools
-        historial = await this.historialService.obtenerHistorialActivo(telefono);
+        // Recalcular historial después de tools
+        historial =
+          await this.historialService.obtenerHistorialActivo(telefono);
         messages = this.historialToMessages(historial);
       }
     } catch (error) {
       this.logger.error('❌ Error en responderPregunta', error);
-
-      // 🚨 Limpieza de tool_calls incompletos en el historial
       try {
         await this.historialService.eliminarUltimoToolCall(telefono);
-        this.logger.warn(
-          `🧹 Se eliminó el último tool_call incompleto para ${telefono}`,
-        );
-      } catch (cleanupError) {
-        this.logger.error(
-          '⚠️ No se pudo limpiar tool_call incompleto',
-          cleanupError,
-        );
-      }
-
+      } catch {}
       return {
         audioPath: '',
         text: '⚠️ Ocurrió un error generando la respuesta.',
@@ -253,6 +287,5 @@ export class ChatGptMcpRespuestasService {
         moderacion,
       ),
     );
-    this.logger.log(`🔹 System prompt actualizado para ${telefono}`);
   }
 }

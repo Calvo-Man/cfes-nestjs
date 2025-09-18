@@ -1,15 +1,24 @@
 // src/mcp/puntajes-ia.mcp.ts
 import { PuntajeService } from '../sistema-puntajes.service';
 
+// function getSemanaISO(): string {
+//   const date = new Date();
+//   // Pasar al jueves de la semana actual para asegurar el año ISO correcto
+//   date.setHours(0, 0, 0, 0);
+//   date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7));
+//   const week1 = new Date(date.getFullYear(), 0, 4);
+//   const weekNumber = Math.round(
+//     ((date.getTime() - week1.getTime()) / 86400000 + 1) / 7
+//   );
+//   return `semana-${weekNumber}`;
+// }
 function getSemanaISO(): string {
-  const date = new Date();
-  // Pasar al jueves de la semana actual para asegurar el año ISO correcto
-  date.setHours(0, 0, 0, 0);
-  date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7));
-  const week1 = new Date(date.getFullYear(), 0, 4);
-  const weekNumber = Math.round(
-    ((date.getTime() - week1.getTime()) / 86400000 + 1) / 7
+  const now = new Date();
+  const oneJan = new Date(now.getFullYear(), 0, 1);
+  const pastDaysOfYear = Math.floor(
+    (now.getTime() - oneJan.getTime()) / (24 * 60 * 60 * 1000)
   );
+  const weekNumber = Math.ceil((pastDaysOfYear + oneJan.getDay() + 1) / 7);
   return `semana-${weekNumber}`;
 }
 
@@ -123,7 +132,7 @@ export const puntajesIaMcpTools = (puntajeService: PuntajeService) => [
       required: ['miembroId'],
     },
     execute: async (args: any) => {
-      const semana = getSemanaISO();
+      const semana =args.semana || getSemanaISO();
       return await puntajeService.obtenerPuntajesPorMiembro(
         args.miembroId,
         semana,

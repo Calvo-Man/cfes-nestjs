@@ -5,7 +5,7 @@ export const teologiaMcpTools = (teologiaService: TeologiaService) => [
   {
     name: 'buscar_respuestas_teologicas',
     description:
-      'Busca respuestas teológicas para una o varias preguntas usando Qdrant y embeddings de OpenAI',
+      'Consulta respuestas teológicas para una o varias preguntas usando Qdrant y embeddings de OpenAI',
     inputSchema: {
       type: 'object',
       properties: {

@@ -57,9 +57,6 @@ Genera un mensaje para los miembros de la iglesia que incluya:
 2️⃣ Una **breve reflexión** que inspire y explique cómo aplicar este versículo en la vida diaria.  
 3️⃣ Un **tono cálido y motivador**, apropiado para un mensaje devocional.
 
-Formato sugerido:
-"📖 Versículo del día: [cita y texto del versículo]  
-Reflexión: [breve reflexión]".
 `;
 
     const response = await this.chatGptMcpRespuestasService.responderPregunta(
