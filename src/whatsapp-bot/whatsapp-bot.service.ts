@@ -249,7 +249,7 @@ const start = Date.now();
       this.logger.debug(`📤 Enviando a ${chatId}: ${mensaje}`);
 
       const isRegistered = await this.client.isRegisteredUser(chatId);
-      if (!isRegistered) throw new Error(`Número no registrado: ${numero}`);
+      if (!isRegistered) throw new Error(`Número no registrado en whatsapp: ${numero}`);
 
       const chat = await this.client.getChatById(chatId).catch(() => null);
       await this.client.sendMessage(chatId, mensaje);

@@ -270,7 +270,9 @@ export class ChatGptMcpRespuestasService {
       this.logger.error('❌ Error en responderPregunta', error);
       try {
         await this.historialService.eliminarUltimoToolCall(telefono);
-      } catch {}
+      } catch {
+        
+      }
       return {
         audioPath: '',
         text: '⚠️ Ocurrió un error generando la respuesta.',
