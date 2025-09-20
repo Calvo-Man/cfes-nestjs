@@ -59,11 +59,11 @@ Genera un mensaje para los miembros de la iglesia que incluya:
 
 `;
 
-    const response = await this.chatGptMcpRespuestasService.responderPregunta(
+    await this.chatGptMcpRespuestasService.responderPregunta(
       versiculoDiario,
       this.mensajeInterno,
     );
-    return response;
+    
   }
 
   // Genera trivia para miembros
@@ -85,7 +85,7 @@ Genera un mensaje para los miembros de la iglesia que cumpla con estos puntos:
 3️⃣ Presenta la **primera pregunta** de la trivia.  
 4️⃣ Indica que los participantes que respondan quedarán registrados en la trivia.  
 5️⃣ Menciona el **ID de la trivia** en el mensaje.  
-6️⃣ Muestra el **Top 3 de participantes** hasta el momento.  
+6️⃣ Muestra el **Top 3 de participantes** de la semana actual.  
 7️⃣ Recuerda que la trivia **vence automáticamente al finalizar el día**.
 
 Usa un tono alegre y motivador para invitar a participar.

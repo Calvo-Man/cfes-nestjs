@@ -114,7 +114,7 @@ export class ChatGptMcpRespuestasService {
       // 🔁 Bucle hasta que no haya tool calls
       while (true) {
         const chat = await this.openai.chat.completions.create({
-          model: 'gpt-4.1-mini',
+          model: MODEL,
           messages,
           tools,
           tool_choice: 'auto',
@@ -136,14 +136,14 @@ export class ChatGptMcpRespuestasService {
           // ✅ Inicia stream final
           this.logger.log(`✅ ${telefono} - Streaming tokenizado`);
           const stream = await this.openai.chat.completions.create({
-            model: MODEL,
+            model: 'gpt-4.1-mini',
             messages,
             stream: true,
           });
-          const encoder = encoding_for_model(MODEL);
+          const encoder = encoding_for_model('gpt-4.1-mini');
           let buffer = '';
           let respuestaFinal = '';
-
+          let tokenCount = 0;
           for await (const chunk of stream) {
             const delta = chunk.choices?.[0]?.delta?.content;
             if (delta) {
@@ -151,7 +151,7 @@ export class ChatGptMcpRespuestasService {
               respuestaFinal += delta;
 
               const tokens = encoder.encode(buffer);
-
+              tokenCount += encoder.encode(delta).length;
               if (tokens.length >= MAX_TOKENS_CHUNK) {
                 // Buscar el último punto, signo de exclamación o interrogación
                 const ultimoPunto = Math.max(
@@ -172,6 +172,7 @@ export class ChatGptMcpRespuestasService {
                 }
 
                 if (onPartial) await onPartial(enviar);
+                tokenCount = encoder.encode(buffer).length; // reinicia contando lo que queda
               }
             }
           }

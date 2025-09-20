@@ -40,7 +40,7 @@ export class WhatsappBotService implements OnModuleInit {
   private RATE_LIMIT_MS = 1500; // ⏱️ cada 1.5 s máx un mensaje
   private MIN_CHARS = 40; // envía antes si hay >=40 caracteres
 
-  private readonly DEBOUNCE_MS = 4000; // 4 s (puedes subir a 5000)
+  private readonly DEBOUNCE_MS = 5000; // 4 s (puedes subir a 5000)
   constructor(
     public readonly manejoDeMensajesService: ManejoDeMensajesService,
     private readonly chatGptService: ChatGptMcpRespuestasService,
