@@ -83,7 +83,7 @@ Genera un mensaje para los miembros de la iglesia que cumpla con estos puntos:
 1️⃣ Anuncia de manera motivadora el inicio de la competencia bíblica de hoy.  
 2️⃣ Explica brevemente el tema *${temaElegido.nombre}* para despertar interés.  
 3️⃣ Presenta la **primera pregunta** de la trivia.  
-4️⃣ Indica que los participantes que respondan quedarán registrados en la trivia.  
+4️⃣ Registra en la trivia a los que respondan la primera pregunta.  
 5️⃣ Menciona el **ID de la trivia** en el mensaje.  
 6️⃣ Muestra el **Top 3 de participantes** de la semana actual.  
 7️⃣ Recuerda que la trivia **vence automáticamente al finalizar el día**.
