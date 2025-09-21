@@ -136,11 +136,11 @@ export class ChatGptMcpRespuestasService {
           // ✅ Inicia stream final
           this.logger.log(`✅ ${telefono} - Streaming tokenizado`);
           const stream = await this.openai.chat.completions.create({
-            model: 'gpt-4.1-mini',
+            model: MODEL,
             messages,
             stream: true,
           });
-          const encoder = encoding_for_model('gpt-4.1-mini');
+          const encoder = encoding_for_model(MODEL);
           let buffer = '';
           let respuestaFinal = '';
           let tokenCount = 0;
@@ -271,7 +271,7 @@ export class ChatGptMcpRespuestasService {
       try {
         await this.historialService.eliminarUltimoToolCall(telefono);
       } catch {
-        
+
       }
       return {
         audioPath: '',
