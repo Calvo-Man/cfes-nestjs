@@ -186,11 +186,11 @@ ${
 > *Centro de Fe y Esperanza - San Pelayo*`;
 
       try {
-        // await this.manejoMensajesService.guardarMensaje(
-        //   `${miembro.telefono}`,
-        //   mensaje,
-        //   'Sistema',
-        // );
+        await this.manejoMensajesService.guardarMensaje(
+          `${miembro.telefono}`,
+          mensaje,
+          'Sistema',
+        );
         this.logger.log(`📤 Recordatorio enviado a ${miembro.name}`);
       } catch (error) {
         this.logger.error(
