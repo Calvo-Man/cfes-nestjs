@@ -42,35 +42,35 @@ export class SystemMessagesService implements OnModuleInit {
   }
 
   // Cada dia a las 2 pm bogota
-  @Cron('0 10 * * *')
-  async mensajeDiario() {
+  @Cron('0 18 * * *')
+  private async  mensajeDiario() {
     console.log('Generando mensaje diario...' + new Date().toLocaleString());
     const temaElegido = VersiculosTemas.escogerTemaAleatorio();
 
     const versiculoDiario = `
-Guarda un mensaje para los miembros de la iglesia que incluya lo siguiente:
+📢 **¡El Versículo del Dia**
+Guarda un mensaje para los miembros de la iglesia que cumpla con estos puntos:
 1️⃣ Un **versículo bíblico** relacionado con el tema: *${temaElegido.nombre}*.  
 2️⃣ Una **breve reflexión** que inspire y explique cómo aplicar este versículo en la vida diaria.  
 3️⃣ Un **tono cálido y motivador**, apropiado para un mensaje devocional.
 
-`;
+Puedes incluir un dato curioso o un contexto relacionado con el tema.
 
-    const response = await this.chatGptMcpRespuestasService.responderPregunta(
+`;
+    await this.chatGptMcpRespuestasService.responderPregunta(
       versiculoDiario,
       this.mensajeInterno,
     );
-    console.log(response);
-    
   }
 
   // Genera trivia para miembros
-  @Cron('2 10 * * 1-6')
+  @Cron('5 10 * * 1-6')
   private async generarTriviaMiembros() {
     console.log(
       'Generando trivia para miembros...' + new Date().toLocaleString(),
     );
     const temaElegido = TriviaTemas.escogerTemaAleatorio('miembro');
-const triviaMensaje = `
+    const triviaMensaje = `
 📢 **¡Comienza la Competencia Bíblica!**
 
 Registra en el sistema la trivia del día con el tema: *${temaElegido.nombre}*.
@@ -93,7 +93,7 @@ Usa un tono alegre y motivador para invitar a participar.
       this.mensajeInterno,
     );
   }
-  @Cron('2 10 * * 0')
+  @Cron('5 10 * * 0')
   async MensajeFinalTrivia() {
     console.log(
       'Enviando mensaje final de trivia...' + new Date().toLocaleString(),
@@ -109,6 +109,4 @@ Invita a los miembros a estar atentos a la próxima trivia de mañana y a seguir
       this.mensajeInterno,
     );
   }
-
-
 }

@@ -224,7 +224,7 @@ export class ChatGptMcpRespuestasService {
         // Ejecutar cada tool
         for (const toolCall of toolCalls) {
           let args: any = {};
-          this.logger.log(`⚠️ Ejecutando tool ${toolCall.name}`);
+          this.logger.log(`Ejecutando tool ${toolCall.name}`);
           try {
             args = JSON.parse(toolCall.arguments);
           } catch (e) {
