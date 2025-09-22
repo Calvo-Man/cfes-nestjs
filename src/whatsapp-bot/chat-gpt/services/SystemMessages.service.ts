@@ -44,25 +44,22 @@ export class SystemMessagesService implements OnModuleInit {
   // Cada dia a las 2 pm bogota
   @Cron('0 10 * * *')
   async mensajeDiario() {
-    if (!this.numeroDeSistema) {
-      console.warn('Número del sistema no inicializado.');
-      return;
-    }
+    console.log('Generando mensaje diario...' + new Date().toLocaleString());
     const temaElegido = VersiculosTemas.escogerTemaAleatorio();
 
     const versiculoDiario = `
-Genera un mensaje para los miembros de la iglesia que incluya:
-
+Guarda un mensaje para los miembros de la iglesia que incluya lo siguiente:
 1️⃣ Un **versículo bíblico** relacionado con el tema: *${temaElegido.nombre}*.  
 2️⃣ Una **breve reflexión** que inspire y explique cómo aplicar este versículo en la vida diaria.  
 3️⃣ Un **tono cálido y motivador**, apropiado para un mensaje devocional.
 
 `;
 
-    await this.chatGptMcpRespuestasService.responderPregunta(
+    const response = await this.chatGptMcpRespuestasService.responderPregunta(
       versiculoDiario,
       this.mensajeInterno,
     );
+    console.log(response);
     
   }
 
@@ -78,7 +75,7 @@ const triviaMensaje = `
 
 Registra en el sistema la trivia del día con el tema: *${temaElegido.nombre}*.
 
-Genera un mensaje para los miembros de la iglesia que cumpla con estos puntos:
+Guarda un mensaje para los miembros de la iglesia que cumpla con estos puntos:
 
 1️⃣ Anuncia de manera motivadora el inicio de la competencia bíblica de hoy.  
 2️⃣ Explica brevemente el tema *${temaElegido.nombre}* para despertar interés.  
@@ -101,10 +98,10 @@ Usa un tono alegre y motivador para invitar a participar.
     console.log(
       'Enviando mensaje final de trivia...' + new Date().toLocaleString(),
     );
-    const triviaFinalMensaje = `📢 La trivia del día ha finalizado.
+    const triviaFinalMensaje = `📢 La competencia biblica ha terminado.
 Guarda un mensaje para los miembros de la iglesia con lo siguiente;
 Anuncia el final de la competencia biblica de manera motivadora.
-Muestra el top 3 de ganadores de la semana y felicítalos.
+Muestra el top 3 de ganadores de la semana actual y felicítalos.
 Invita a los miembros a estar atentos a la próxima trivia de mañana y a seguir participando para ganar.
 `;
     await this.chatGptMcpRespuestasService.responderPregunta(
