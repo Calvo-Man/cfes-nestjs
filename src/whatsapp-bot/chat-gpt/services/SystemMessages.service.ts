@@ -42,7 +42,7 @@ export class SystemMessagesService implements OnModuleInit {
   }
 
   // Cada dia a las 2 pm bogota
-  @Cron('0 18 * * *')
+  @Cron('0 10 * * *')
   private async  mensajeDiario() {
     console.log('Generando mensaje diario...' + new Date().toLocaleString());
     const temaElegido = VersiculosTemas.escogerTemaAleatorio();
