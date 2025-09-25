@@ -23,7 +23,7 @@ export class AseoCronService {
   ) {}
 
  // Cada día 25 del mes a las 00:00
-//@Cron('* * * * *')
+@Cron('0 26 * * *')
 
   async generarHorarioMensualDeAseo() {
     this.logger.log('🧹 Generando horario de aseo mensual...');
