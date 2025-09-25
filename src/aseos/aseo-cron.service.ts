@@ -22,9 +22,8 @@ export class AseoCronService {
     private readonly manejoDeMensajesService: ManejoDeMensajesService,
   ) {}
 
- // Cada día 25 del mes a las 00:00
-@Cron('0 26 * * *')
-
+ // Cada día 26 del mes a las 00:00
+  @Cron('0 0 26 * *')
   async generarHorarioMensualDeAseo() {
     this.logger.log('🧹 Generando horario de aseo mensual...');
     const inicioMesProximo = dayjs().add(1, 'month').startOf('month');
