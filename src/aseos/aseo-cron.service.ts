@@ -461,9 +461,9 @@ Gracias por tu colaboracion.
     }
   }
 
-  verificarNumeroDeTelefono(telefono: string): boolean {
+ verificarNumeroDeTelefono(telefono: string): boolean {
     const telefonoRegex = /^57\d{10}}$/; // 👈 corregido a 57 + 10 dígitos
-    return telefonoRegex.test(telefono);
+    return true;
   }
 
   obtenerDiasJuevesYDomingoDelProximoMes(): Date[] {
