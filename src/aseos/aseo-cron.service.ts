@@ -41,7 +41,7 @@ export class AseoCronService {
     const asignaciones = await this.generarAsignacionesMensuales();
 
     // 👉 Notificar asignaciones
-    //await this.notificarAsignaciones(asignaciones);
+    await this.notificarAsignaciones(asignaciones);
 
     this.aseoGateway.notificarNuevoHorario();
   }
